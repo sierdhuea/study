@@ -1,0 +1,2259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📚 学习计划管理器 · 智能复习</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
+    </script>
+    <style>
+        /* ===== 全局重置 & 动态背景 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --green-50: #f0f7f0;
+            --green-100: #e0efe0;
+            --green-200: #c5dfc5;
+            --green-300: #a5cfa5;
+            --green-400: #81bf81;
+            --green-500: #5ca85c;
+            --green-600: #3d8f3d;
+            --green-700: #2a752a;
+            --green-800: #1a5a1a;
+            --green-900: #0e400e;
+            --shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.14);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            --bg-body: #f5faf5;
+            --card-bg: rgba(255, 255, 255, 0.88);
+            --border-light: rgba(92, 168, 92, 0.15);
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg-body);
+            color: #1e2e1e;
+            min-height: 100vh;
+            padding: 20px;
+            background-image: radial-gradient(ellipse at 10% 20%, rgba(165, 207, 165, 0.30) 0%, transparent 60%),
+                radial-gradient(ellipse at 90% 80%, rgba(129, 191, 129, 0.25) 0%, transparent 50%);
+            background-size: 200% 200%;
+            animation: gradientFlow 18s ease-in-out infinite alternate;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(2px 2px at 20% 30%, rgba(92, 168, 92, 0.3), transparent),
+                radial-gradient(2px 2px at 40% 70%, rgba(92, 168, 92, 0.2), transparent),
+                radial-gradient(3px 3px at 70% 20%, rgba(92, 168, 92, 0.25), transparent),
+                radial-gradient(2px 2px at 90% 50%, rgba(92, 168, 92, 0.15), transparent),
+                radial-gradient(2px 2px at 10% 80%, rgba(92, 168, 92, 0.2), transparent);
+            background-size: 200% 200%;
+            animation: particleFloat 30s linear infinite alternate;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes gradientFlow {
+            0% {
+                background-position: 0% 0%;
+            }
+            100% {
+                background-position: 100% 100%;
+            }
+        }
+        @keyframes particleFloat {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+            50% {
+                transform: translate(-30px, 20px) scale(1.1);
+            }
+            100% {
+                transform: translate(30px, -20px) scale(0.9);
+            }
+        }
+
+        .app-container {
+            position: relative;
+            z-index: 1;
+            max-width: 1500px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--green-100);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--green-400);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--green-500);
+        }
+
+        /* ===== 顶部栏 ===== */
+        .header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            padding: 16px 28px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-light);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .header-left h1 {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--green-700), var(--green-500));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .header-left .emoji-big {
+            font-size: 30px;
+            -webkit-text-fill-color: initial;
+        }
+
+        .header-right {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .beijing-time {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--green-700);
+            background: var(--green-100);
+            padding: 4px 16px;
+            border-radius: 30px;
+            white-space: nowrap;
+            box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.04);
+            letter-spacing: 0.5px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 18px;
+            border: none;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            background: var(--green-200);
+            color: var(--green-800);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+            background: var(--green-300);
+        }
+        .btn:active {
+            transform: scale(0.97);
+        }
+        .btn-primary {
+            background: var(--green-500);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: var(--green-600);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--green-400);
+            color: var(--green-700);
+        }
+        .btn-outline:hover {
+            background: var(--green-100);
+            border-color: var(--green-500);
+        }
+        .btn-danger {
+            background: #fde8e8;
+            color: #b33;
+        }
+        .btn-danger:hover {
+            background: #fcd5d5;
+        }
+        .btn-sm {
+            padding: 4px 12px;
+            font-size: 12px;
+        }
+        .btn-success {
+            background: var(--green-500);
+            color: #fff;
+        }
+        .btn-success:hover {
+            background: var(--green-600);
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ===== 左栏 - 日历 ===== */
+        .calendar-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 20px 18px 18px;
+            border: 1px solid var(--border-light);
+            height: fit-content;
+        }
+
+        .calendar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .calendar-header .month-year {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--green-800);
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 6px;
+        }
+        .calendar-nav button {
+            background: var(--green-100);
+            border: none;
+            border-radius: 30px;
+            width: 36px;
+            height: 36px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--green-700);
+            font-weight: 600;
+        }
+        .calendar-nav button:hover {
+            background: var(--green-300);
+            transform: scale(1.05);
+        }
+
+        .calendar-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--green-600);
+            margin-bottom: 8px;
+            padding: 0 2px;
+        }
+
+        .calendar-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1/1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-sm);
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--green-800);
+            background: transparent;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            border: 2px solid transparent;
+            user-select: none;
+            min-height: 44px;
+        }
+
+        .calendar-day:hover {
+            background: var(--green-100);
+            transform: scale(1.04);
+        }
+
+        .calendar-day.other-month {
+            color: #b0c8b0;
+        }
+
+        .calendar-day.today {
+            border-color: var(--green-500);
+            background: var(--green-100);
+            font-weight: 700;
+        }
+
+        .calendar-day.selected {
+            background: var(--green-500);
+            color: #fff;
+            border-color: var(--green-600);
+            transform: scale(1.04);
+            box-shadow: 0 4px 14px rgba(92, 168, 92, 0.35);
+        }
+        .calendar-day.selected:hover {
+            background: var(--green-600);
+        }
+
+        .calendar-day .dot {
+            position: absolute;
+            bottom: 3px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--green-500);
+            transition: var(--transition);
+        }
+        .calendar-day .dot.activity-dot {
+            background: #f39c12;
+        }
+        .calendar-day .dot.ebbinghaus-dot {
+            background: #8e44ad;
+        }
+        .calendar-day .dot.checkin-dot {
+            background: #2ecc71;
+        }
+        .calendar-day .dot.note-dot {
+            background: #3498db;
+        }
+        .calendar-day .dot.hours-dot {
+            background: #e67e22;
+        }
+
+        .calendar-day .badge-count {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: var(--green-500);
+            color: #fff;
+            border-radius: 50%;
+            font-size: 9px;
+            font-weight: 700;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        .today-activity {
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: var(--green-100);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            color: var(--green-800);
+            border-left: 4px solid var(--green-500);
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .today-activity .label {
+            font-weight: 600;
+            color: var(--green-700);
+        }
+        .today-activity .content {
+            flex: 1;
+            word-break: break-all;
+        }
+        .today-activity .empty {
+            color: #8aa88a;
+            font-style: italic;
+        }
+
+        .right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 18px 20px 20px;
+            border: 1px solid var(--border-light);
+            transition: var(--transition);
+        }
+        .card:hover {
+            box-shadow: var(--shadow-hover);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--green-800);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 2px solid var(--green-200);
+            padding-bottom: 10px;
+        }
+        .card-title .badge {
+            font-size: 12px;
+            font-weight: 400;
+            background: var(--green-200);
+            padding: 0 10px;
+            border-radius: 20px;
+            color: var(--green-700);
+            margin-left: auto;
+        }
+
+        .note-area {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+        .note-area textarea {
+            flex: 1;
+            min-width: 150px;
+            padding: 10px 14px;
+            border: 2px solid var(--green-200);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-family: var(--font);
+            resize: vertical;
+            min-height: 60px;
+            transition: var(--transition);
+            background: rgba(255, 255, 255, 0.6);
+            color: #1e2e1e;
+        }
+        .note-area textarea:focus {
+            outline: none;
+            border-color: var(--green-500);
+            box-shadow: 0 0 0 4px rgba(92, 168, 92, 0.15);
+            background: #fff;
+        }
+        .note-display {
+            padding: 10px 14px;
+            background: var(--green-50);
+            border-radius: var(--radius-sm);
+            min-height: 44px;
+            font-size: 14px;
+            color: var(--green-800);
+            border: 1px dashed var(--green-300);
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .note-display.empty {
+            color: #aac0aa;
+            font-style: italic;
+        }
+
+        .checkin-input-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .checkin-input-group input {
+            flex: 1;
+            min-width: 120px;
+            padding: 8px 14px;
+            border: 2px solid var(--green-200);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            transition: var(--transition);
+            background: rgba(255, 255, 255, 0.6);
+        }
+        .checkin-input-group input:focus {
+            outline: none;
+            border-color: var(--green-500);
+            box-shadow: 0 0 0 4px rgba(92, 168, 92, 0.12);
+            background: #fff;
+        }
+
+        .checkin-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .checkin-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: var(--green-50);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--green-200);
+            transition: var(--transition);
+            animation: fadeSlideIn 0.25s ease;
+        }
+        .checkin-item:hover {
+            background: var(--green-100);
+            border-color: var(--green-300);
+        }
+        .checkin-item .content {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--green-800);
+        }
+        .checkin-item .content.done {
+            text-decoration: line-through;
+            color: #8aa88a;
+        }
+        .checkin-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--green-500);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 8px 0 12px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--green-200);
+            background: #fff;
+        }
+
+        .table-wrapper table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            min-width: 400px;
+        }
+
+        .table-wrapper th {
+            background: var(--green-200);
+            color: var(--green-800);
+            font-weight: 600;
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 2px solid var(--green-300);
+            white-space: nowrap;
+        }
+        .table-wrapper td {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--green-100);
+            color: #1e2e1e;
+            vertical-align: middle;
+        }
+        .table-wrapper tr:hover td {
+            background: var(--green-50);
+        }
+        .table-wrapper td input,
+        .table-wrapper td select {
+            width: 100%;
+            padding: 4px 6px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            font-size: 13px;
+            background: transparent;
+            transition: var(--transition);
+            color: #1e2e1e;
+            font-family: var(--font);
+        }
+        .table-wrapper td input:hover,
+        .table-wrapper td select:hover {
+            border-color: var(--green-300);
+            background: rgba(255, 255, 255, 0.5);
+        }
+        .table-wrapper td input:focus,
+        .table-wrapper td select:focus {
+            outline: none;
+            border-color: var(--green-500);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(92, 168, 92, 0.10);
+        }
+        .table-wrapper td select {
+            appearance: auto;
+            background: #fff;
+        }
+
+        .table-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-top: 6px;
+        }
+
+        /* ===== 艾宾浩斯全新样式 ===== */
+        .ebbinghaus-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .ebbinghaus-input-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+        .ebbinghaus-input-row input[type="text"] {
+            flex: 2;
+            min-width: 120px;
+            padding: 8px 14px;
+            border: 2px solid var(--green-200);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.6);
+            transition: var(--transition);
+        }
+        .ebbinghaus-input-row input[type="text"]:focus {
+            outline: none;
+            border-color: var(--green-500);
+            box-shadow: 0 0 0 4px rgba(92, 168, 92, 0.12);
+            background: #fff;
+        }
+        .ebbinghaus-input-row input[type="date"] {
+            padding: 8px 12px;
+            border: 2px solid var(--green-200);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.6);
+            transition: var(--transition);
+        }
+        .ebbinghaus-input-row input[type="date"]:focus {
+            outline: none;
+            border-color: var(--green-500);
+            box-shadow: 0 0 0 4px rgba(92, 168, 92, 0.12);
+            background: #fff;
+        }
+
+        .ebbinghaus-search-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .ebbinghaus-search-row input {
+            flex: 1;
+            padding: 6px 12px;
+            border: 2px solid var(--green-200);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.6);
+            transition: var(--transition);
+        }
+        .ebbinghaus-search-row input:focus {
+            outline: none;
+            border-color: var(--green-500);
+            box-shadow: 0 0 0 4px rgba(92, 168, 92, 0.12);
+            background: #fff;
+        }
+
+        .ebbinghaus-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 180px;
+            overflow-y: auto;
+            padding-right: 4px;
+            border: 1px solid var(--green-200);
+            border-radius: var(--radius-sm);
+            padding: 6px 8px;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .ebbinghaus-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: var(--radius-sm);
+            background: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            transition: var(--transition);
+            border-left: 3px solid transparent;
+        }
+        .ebbinghaus-item:hover {
+            background: var(--green-100);
+            border-left-color: var(--green-500);
+        }
+        .ebbinghaus-item.active {
+            background: var(--green-200);
+            border-left-color: var(--green-600);
+            font-weight: 600;
+        }
+        .ebbinghaus-item .name {
+            flex: 1;
+            font-size: 14px;
+            color: var(--green-800);
+            word-break: break-all;
+        }
+        .ebbinghaus-item .meta {
+            font-size: 11px;
+            color: var(--green-600);
+            background: var(--green-100);
+            padding: 0 8px;
+            border-radius: 12px;
+            white-space: nowrap;
+        }
+        .ebbinghaus-item .del-btn {
+            background: transparent;
+            border: none;
+            color: #b33;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0 4px;
+        }
+        .ebbinghaus-item .del-btn:hover {
+            color: #d00;
+        }
+
+        .ebbinghaus-chart-container {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: var(--radius-sm);
+            padding: 10px;
+            border: 1px solid var(--green-200);
+            min-height: 160px;
+            position: relative;
+        }
+        .ebbinghaus-chart-container canvas {
+            width: 100% !important;
+            height: auto !important;
+            max-height: 160px;
+            display: block;
+        }
+        .ebbinghaus-chart-placeholder {
+            color: #aac0aa;
+            font-style: italic;
+            text-align: center;
+            padding: 30px 0;
+            font-size: 14px;
+        }
+
+        /* ===== 学习时长 ===== */
+        .hours-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .hours-input-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+        .hours-input-group label {
+            font-weight: 600;
+            color: var(--green-700);
+            font-size: 14px;
+        }
+        .hours-input-group input[type="number"] {
+            width: 100px;
+            padding: 8px 12px;
+            border: 2px solid var(--green-200);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.6);
+            transition: var(--transition);
+        }
+        .hours-input-group input[type="number"]:focus {
+            outline: none;
+            border-color: var(--green-500);
+            box-shadow: 0 0 0 4px rgba(92, 168, 92, 0.12);
+            background: #fff;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: var(--radius-sm);
+            padding: 10px;
+            border: 1px solid var(--green-200);
+            min-height: 180px;
+        }
+        .chart-container canvas {
+            width: 100% !important;
+            height: auto !important;
+            max-height: 180px;
+            display: block;
+        }
+
+        .analysis-text {
+            font-size: 14px;
+            color: var(--green-800);
+            background: var(--green-50);
+            padding: 10px 16px;
+            border-radius: var(--radius-sm);
+            border-left: 4px solid var(--green-500);
+            line-height: 1.6;
+        }
+        .analysis-text .highlight {
+            font-weight: 700;
+            color: var(--green-700);
+        }
+
+        /* ===== 右键菜单 ===== */
+        .context-menu {
+            display: none;
+            position: fixed;
+            background: #fff;
+            border-radius: var(--radius-sm);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+            padding: 16px 20px 20px;
+            min-width: 260px;
+            z-index: 9999;
+            border: 1px solid var(--green-200);
+            animation: fadeSlideIn 0.15s ease;
+        }
+        .context-menu.active {
+            display: block;
+        }
+        .context-menu .title {
+            font-weight: 600;
+            color: var(--green-800);
+            font-size: 15px;
+            margin-bottom: 10px;
+        }
+        .context-menu input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid var(--green-200);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            margin-bottom: 10px;
+            transition: var(--transition);
+        }
+        .context-menu input:focus {
+            outline: none;
+            border-color: var(--green-500);
+            box-shadow: 0 0 0 4px rgba(92, 168, 92, 0.12);
+        }
+        .context-menu .actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: var(--green-800);
+            color: #fff;
+            padding: 12px 28px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.20);
+            opacity: 0;
+            transition: all 0.4s ease;
+            z-index: 99999;
+            pointer-events: none;
+            backdrop-filter: blur(8px);
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .empty-state {
+            color: #aac0aa;
+            font-style: italic;
+            font-size: 14px;
+            padding: 8px 0;
+        }
+
+        @keyframes fadeSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+            .header-right {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            .calendar-card {
+                padding: 14px;
+            }
+            .card {
+                padding: 14px;
+            }
+            .context-menu {
+                min-width: 200px;
+                left: 10px !important;
+                right: 10px !important;
+                width: auto;
+            }
+            .beijing-time {
+                font-size: 13px;
+                padding: 2px 12px;
+            }
+        }
+
+        .hidden-input {
+            display: none;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-badge.done {
+            background: var(--green-200);
+            color: var(--green-700);
+        }
+        .status-badge.pending {
+            background: #fdebd0;
+            color: #b9770e;
+        }
+        .selected-date-display {
+            font-size: 13px;
+            color: var(--green-600);
+            background: var(--green-100);
+            padding: 2px 14px;
+            border-radius: 20px;
+            font-weight: 500;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== 提示 ===== -->
+    <div id="toast" class="toast"></div>
+
+    <!-- ===== 右键菜单 ===== -->
+    <div id="contextMenu" class="context-menu">
+        <div class="title">📅 今日有什么活动？</div>
+        <input type="text" id="activityInput" placeholder="例如：很忙、考试、复习..." maxlength="50">
+        <div class="actions">
+            <button class="btn btn-sm btn-outline" id="cancelActivity">取消</button>
+            <button class="btn btn-sm btn-primary" id="saveActivity">保存</button>
+        </div>
+    </div>
+
+    <!-- ===== 主容器 ===== -->
+    <div class="app-container">
+
+        <!-- 顶部 -->
+        <header class="header">
+            <div class="header-left">
+                <span class="emoji-big">📚</span>
+                <h1>学习计划管理器</h1>
+                <span style="font-size:13px;color:var(--green-600);font-weight:500;background:var(--green-100);padding:2px 14px;border-radius:20px;">智能复习</span>
+            </div>
+            <div class="header-right">
+                <span class="beijing-time" id="beijingTime">🕒 加载中...</span>
+                <button class="btn btn-outline" onclick="exportAllData()">📥 导出数据</button>
+                <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">📤 导入数据</button>
+                <input type="file" id="importFile" class="hidden-input" accept=".json" onchange="importAllData(event)">
+                <button class="btn btn-outline" onclick="copyDataText()">📋 复制文本</button>
+            </div>
+        </header>
+
+        <!-- 主体 -->
+        <div class="main-grid">
+
+            <!-- ===== 左栏：日历 ===== -->
+            <div class="calendar-card">
+                <div class="calendar-header">
+                    <span class="month-year" id="monthYear">2026年6月</span>
+                    <div class="calendar-nav">
+                        <button id="prevMonth">‹</button>
+                        <button id="nextMonth">›</button>
+                        <button id="todayBtn" style="font-size:13px;width:auto;padding:0 14px;">今天</button>
+                    </div>
+                </div>
+                <div class="calendar-weekdays">
+                    <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+                </div>
+                <div class="calendar-days" id="calendarDays"></div>
+
+                <div class="today-activity" id="todayActivity">
+                    <span class="label">📌 今日活动：</span>
+                    <span class="content empty">右键点击日期添加活动</span>
+                </div>
+                <div style="margin-top:6px;font-size:12px;color:var(--green-500);display:flex;gap:14px;flex-wrap:wrap;justify-content:center;">
+                    <span>🟢 打卡</span>
+                    <span>🟣 背诵复习</span>
+                    <span>🟠 活动</span>
+                    <span>🔵 备注</span>
+                    <span>🟡 学习时长</span>
+                </div>
+            </div>
+
+            <!-- ===== 右栏 ===== -->
+            <div class="right-col">
+
+                <!-- 备注 -->
+                <div class="card">
+                    <div class="card-title">
+                        📝 当日备注
+                        <span class="badge" id="noteDateBadge">2026-06-22</span>
+                    </div>
+                    <div class="note-area">
+                        <textarea id="noteInput" placeholder="写点今天的备注吧…"></textarea>
+                        <button class="btn btn-primary" onclick="saveNote()">💾 保存</button>
+                    </div>
+                    <div class="note-display empty" id="noteDisplay">暂无备注</div>
+                </div>
+
+                <!-- 打卡 -->
+                <div class="card">
+                    <div class="card-title">
+                        ✅ 当日打卡
+                        <span class="badge" id="checkinDateBadge">2026-06-22</span>
+                    </div>
+                    <div class="checkin-input-group">
+                        <input type="text" id="checkinInput" placeholder="输入打卡内容…" maxlength="50">
+                        <button class="btn btn-primary" onclick="addCheckin()">➕ 添加</button>
+                    </div>
+                    <div class="checkin-list" id="checkinList">
+                        <div class="empty-state">暂无打卡，添加一条吧 ✨</div>
+                    </div>
+                </div>
+
+                <!-- 表格 -->
+                <div class="card">
+                    <div class="card-title">
+                        📊 打卡表格 (Excel 风格)
+                        <span class="badge" id="tableDateBadge">2026-06-22</span>
+                    </div>
+                    <div class="table-wrapper" id="tableWrapper">
+                        <table id="dataTable">
+                            <thead>
+                                <tr>
+                                    <th style="width:50px;">#</th>
+                                    <th style="min-width:90px;">时间</th>
+                                    <th style="min-width:120px;">任务</th>
+                                    <th style="min-width:150px;">详细备注</th>
+                                    <th style="min-width:90px;">状态</th>
+                                    <th style="width:80px;">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody">
+                                <tr>
+                                    <td colspan="6" style="text-align:center;color:#aac0aa;padding:20px;">暂无数据，点击下方添加行</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="table-toolbar">
+                        <button class="btn btn-sm btn-primary" onclick="addTableRow()">➕ 添加行</button>
+                        <button class="btn btn-sm btn-success" onclick="exportExcel()">📥 导出 Excel</button>
+                        <button class="btn btn-sm btn-outline" onclick="clearTableData()">🗑️ 清空今日</button>
+                    </div>
+                </div>
+
+                <!-- ===== 艾宾浩斯记忆曲线 (全新) ===== -->
+                <div class="card">
+                    <div class="card-title">
+                        🧠 背诵内容 · 复习曲线
+                        <span class="badge">独立曲线</span>
+                    </div>
+                    <div class="ebbinghaus-container">
+                        <!-- 输入 -->
+                        <div class="ebbinghaus-input-row">
+                            <input type="text" id="ebbinghausInput" placeholder="输入要背的内容…" maxlength="60">
+                            <input type="date" id="ebbinghausDate">
+                            <button class="btn btn-primary" onclick="addEbbinghausItem()">➕ 添加</button>
+                        </div>
+                        <!-- 搜索 -->
+                        <div class="ebbinghaus-search-row">
+                            <input type="text" id="ebbinghausSearch" placeholder="🔍 搜索内容…">
+                            <button class="btn btn-sm btn-outline" onclick="clearSearch()">清除</button>
+                        </div>
+                        <!-- 内容列表 -->
+                        <div class="ebbinghaus-list" id="ebbinghausList">
+                            <div class="empty-state">暂无背诵内容，添加一条吧 📖</div>
+                        </div>
+                        <!-- 曲线图 -->
+                        <div class="ebbinghaus-chart-container" id="ebbinghausChartContainer">
+                            <canvas id="ebbinghausChart" width="600" height="160"></canvas>
+                            <div class="ebbinghaus-chart-placeholder" id="chartPlaceholder">点击上方内容查看复习曲线</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== 学习时长 & 趋势 ===== -->
+                <div class="card">
+                    <div class="card-title">
+                        ⏱️ 学习时长 & 趋势
+                        <span class="badge" id="hoursDateBadge">2026-06-22</span>
+                    </div>
+                    <div class="hours-section">
+                        <div class="hours-input-group">
+                            <label for="hoursInput">今天学了（小时）：</label>
+                            <input type="number" id="hoursInput" min="0" max="24" step="0.5" placeholder="0">
+                            <button class="btn btn-primary btn-sm" onclick="saveHours()">💾 记录</button>
+                            <button class="btn btn-outline btn-sm" onclick="clearHours()">🗑️ 清空今日</button>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="hoursChart" width="600" height="180"></canvas>
+                        </div>
+                        <div class="analysis-text" id="analysisText">
+                            📊 学习分析：暂无数据，请记录今日学习时长。
+                        </div>
+                    </div>
+                </div>
+
+            </div><!-- /right-col -->
+        </div><!-- /main-grid -->
+
+        <footer style="text-align:center;font-size:12px;color:var(--green-400);padding:12px 0 4px;border-top:1px solid var(--green-200);margin-top:8px;">
+            🌱 数据自动保存在浏览器 · 右键日历添加活动 · 背诵内容独立复习曲线
+        </footer>
+    </div>
+
+    <script>
+        // ================================================================
+        //  全局状态
+        // ================================================================
+        const STORAGE_KEY = 'studyPlannerData';
+        let currentDate = new Date();
+        let selectedDate = new Date();
+        let currentYear = currentDate.getFullYear();
+        let currentMonth = currentDate.getMonth();
+        let contextTargetDate = null;
+
+        // ================================================================
+        //  数据管理
+        // ================================================================
+        function getDefaultData() {
+            return {
+                activities: {},
+                notes: {},
+                checkins: {},
+                tableData: {},
+                studyHours: {},
+                // 新结构：背诵内容数组
+                ebbinghausItems: [] // [ { id, content, startDate, reviewDates: [dateStr, ...], completed: boolean } ]
+            };
+        }
+
+        let data = loadData();
+
+        function loadData() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    const def = getDefaultData();
+                    for (const key in def) {
+                        if (!(key in parsed)) parsed[key] = def[key];
+                    }
+                    // 如果旧数据存在 ebbinghaus 数组，迁移为 ebbinghausItems
+                    if (parsed.ebbinghaus && Array.isArray(parsed.ebbinghaus) && parsed.ebbinghaus.length > 0) {
+                        // 检查是否已经是新结构（有reviewDates）
+                        if (!parsed.ebbinghaus[0].reviewDates) {
+                            // 旧结构：每个条目是 { id, content, date, completed }，我们转换为新结构
+                            const itemsMap = new Map();
+                            parsed.ebbinghaus.forEach(item => {
+                                const key = item.content + '|' + item.date;
+                                if (!itemsMap.has(key)) {
+                                    // 每个旧条目视为一个复习日，我们需要聚合
+                                    // 但为了简单，我们只取每个内容的第一个条目作为startDate，并收集所有日期作为reviewDates
+                                }
+                            });
+                            // 由于旧数据可能包含复习后缀，更复杂，我们直接重置并提示用户
+                            // 安全做法：清空并让用户重新添加
+                            parsed.ebbinghausItems = [];
+                            delete parsed.ebbinghaus;
+                            showToast('⚠️ 检测到旧版艾宾浩斯数据，已重置，请重新添加背诵内容。');
+                        } else {
+                            parsed.ebbinghausItems = parsed.ebbinghaus;
+                            delete parsed.ebbinghaus;
+                        }
+                    }
+                    return parsed;
+                }
+            } catch (_) { /* ignore */ }
+            return getDefaultData();
+        }
+
+        function saveData() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            } catch (_) { /* ignore */ }
+        }
+
+        function formatDate(d) {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+
+        function parseDate(str) {
+            const parts = str.split('-').map(Number);
+            return new Date(parts[0], parts[1] - 1, parts[2]);
+        }
+
+        function dateStrToDisplay(str) {
+            const d = parseDate(str);
+            return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+        }
+
+        function isToday(str) {
+            return str === formatDate(new Date());
+        }
+
+        // ================================================================
+        //  北京时间
+        // ================================================================
+        function updateBeijingTime() {
+            const now = new Date();
+            const beijing = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+            const h = String(beijing.getUTCHours()).padStart(2, '0');
+            const m = String(beijing.getUTCMinutes()).padStart(2, '0');
+            const s = String(beijing.getUTCSeconds()).padStart(2, '0');
+            document.getElementById('beijingTime').textContent = `🕒 北京时间 ${h}:${m}:${s}`;
+        }
+        setInterval(updateBeijingTime, 1000);
+        updateBeijingTime();
+
+        // ================================================================
+        //  Toast
+        // ================================================================
+        let toastTimer = null;
+
+        function showToast(msg) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+        }
+
+        // ================================================================
+        //  日历渲染
+        // ================================================================
+        function renderCalendar() {
+            const year = currentYear;
+            const month = currentMonth;
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+            const container = document.getElementById('calendarDays');
+            container.innerHTML = '';
+
+            const todayStr = formatDate(new Date());
+            const selectedStr = formatDate(selectedDate);
+
+            for (let i = firstDay - 1; i >= 0; i--) {
+                const d = daysInPrevMonth - i;
+                const dateObj = new Date(year, month - 1, d);
+                const str = formatDate(dateObj);
+                const dayEl = createDayEl(d, str, 'other-month');
+                container.appendChild(dayEl);
+            }
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateObj = new Date(year, month, d);
+                const str = formatDate(dateObj);
+                let cls = '';
+                if (str === todayStr) cls += ' today';
+                if (str === selectedStr) cls += ' selected';
+                const dayEl = createDayEl(d, str, cls);
+                container.appendChild(dayEl);
+            }
+
+            const totalCells = firstDay + daysInMonth;
+            const remaining = (7 - (totalCells % 7)) % 7;
+            for (let d = 1; d <= remaining; d++) {
+                const dateObj = new Date(year, month + 1, d);
+                const str = formatDate(dateObj);
+                const dayEl = createDayEl(d, str, 'other-month');
+                container.appendChild(dayEl);
+            }
+
+            document.getElementById('monthYear').textContent =
+                `${year}年${month+1}月`;
+
+            updateActivityDisplay(selectedStr);
+            updateDateBadges(selectedStr);
+            loadDataForDate(selectedStr);
+            renderHoursChart();
+            updateAnalysis();
+            // 刷新艾宾浩斯列表和图表
+            renderEbbinghausList();
+            // 如果当前有选中内容，重绘曲线
+            if (selectedEbbinghausId !== null) {
+                const item = data.ebbinghausItems.find(i => i.id === selectedEbbinghausId);
+                if (item) drawEbbinghausChart(item);
+                else {
+                    selectedEbbinghausId = null;
+                    document.getElementById('chartPlaceholder').style.display = 'block';
+                    document.getElementById('ebbinghausChart').style.display = 'none';
+                }
+            } else {
+                document.getElementById('chartPlaceholder').style.display = 'block';
+                document.getElementById('ebbinghausChart').style.display = 'none';
+            }
+        }
+
+        function createDayEl(dayNum, dateStr, extraClass) {
+            const div = document.createElement('div');
+            div.className = `calendar-day ${extraClass}`;
+            div.textContent = dayNum;
+
+            const dots = [];
+            if (data.activities[dateStr]) dots.push('activity-dot');
+            if (data.notes[dateStr] && data.notes[dateStr].trim() !== '') dots.push('note-dot');
+            const checkins = data.checkins[dateStr] || [];
+            if (checkins.length > 0) dots.push('checkin-dot');
+            if (data.studyHours[dateStr]) dots.push('hours-dot');
+
+            // 检查当天是否有任何复习任务
+            const hasReview = data.ebbinghausItems.some(item => item.reviewDates && item.reviewDates.includes(dateStr));
+            if (hasReview) dots.push('ebbinghaus-dot');
+
+            const dotColors = {
+                'activity-dot': '#f39c12',
+                'note-dot': '#3498db',
+                'checkin-dot': '#2ecc71',
+                'ebbinghaus-dot': '#8e44ad',
+                'hours-dot': '#e67e22'
+            };
+            const types = [...new Set(dots)];
+            const showDots = types.slice(0, 2);
+            showDots.forEach(type => {
+                const dot = document.createElement('span');
+                dot.className = `dot ${type}`;
+                dot.style.background = dotColors[type] || '#5ca85c';
+                div.appendChild(dot);
+            });
+
+            div.addEventListener('click', (e) => {
+                e.stopPropagation();
+                selectedDate = parseDate(dateStr);
+                renderCalendar();
+            });
+
+            div.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                contextTargetDate = dateStr;
+                showContextMenu(e.clientX, e.clientY, dateStr);
+            });
+
+            return div;
+        }
+
+        // ================================================================
+        //  今日活动
+        // ================================================================
+        function updateActivityDisplay(dateStr) {
+            const container = document.getElementById('todayActivity');
+            const content = container.querySelector('.content');
+            const label = container.querySelector('.label');
+            const activity = data.activities[dateStr];
+            if (activity) {
+                content.textContent = activity;
+                content.className = 'content';
+                label.textContent = `📌 ${dateStrToDisplay(dateStr)} 活动：`;
+            } else {
+                content.textContent = '右键点击日期添加活动';
+                content.className = 'content empty';
+                label.textContent = '📌 今日活动：';
+            }
+        }
+
+        // ================================================================
+        //  右键菜单
+        // ================================================================
+        const contextMenu = document.getElementById('contextMenu');
+        const activityInput = document.getElementById('activityInput');
+
+        function showContextMenu(x, y, dateStr) {
+            contextMenu.style.left = Math.min(x, window.innerWidth - 300) + 'px';
+            contextMenu.style.top = Math.min(y, window.innerHeight - 160) + 'px';
+            contextMenu.classList.add('active');
+            activityInput.value = data.activities[dateStr] || '';
+            activityInput.focus();
+            activityInput.select();
+            contextTargetDate = dateStr;
+        }
+
+        function hideContextMenu() {
+            contextMenu.classList.remove('active');
+        }
+
+        document.getElementById('cancelActivity').addEventListener('click', hideContextMenu);
+        document.getElementById('saveActivity').addEventListener('click', () => {
+            const val = activityInput.value.trim();
+            if (contextTargetDate) {
+                if (val) {
+                    data.activities[contextTargetDate] = val;
+                } else {
+                    delete data.activities[contextTargetDate];
+                }
+                saveData();
+                renderCalendar();
+                showToast(val ? `✅ 已保存活动：${val}` : '🗑️ 已删除活动');
+            }
+            hideContextMenu();
+        });
+
+        activityInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') document.getElementById('saveActivity').click();
+            if (e.key === 'Escape') hideContextMenu();
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!contextMenu.contains(e.target)) hideContextMenu();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') hideContextMenu();
+        });
+
+        // ================================================================
+        //  更新日期标签
+        // ================================================================
+        function updateDateBadges(dateStr) {
+            const display = dateStrToDisplay(dateStr);
+            document.getElementById('noteDateBadge').textContent = display;
+            document.getElementById('checkinDateBadge').textContent = display;
+            document.getElementById('tableDateBadge').textContent = display;
+            document.getElementById('hoursDateBadge').textContent = display;
+        }
+
+        // ================================================================
+        //  加载日期数据
+        // ================================================================
+        function loadDataForDate(dateStr) {
+            const note = data.notes[dateStr] || '';
+            const noteDisplay = document.getElementById('noteDisplay');
+            const noteInput = document.getElementById('noteInput');
+            noteInput.value = note;
+            if (note.trim()) {
+                noteDisplay.textContent = note;
+                noteDisplay.className = 'note-display';
+            } else {
+                noteDisplay.textContent = '暂无备注';
+                noteDisplay.className = 'note-display empty';
+            }
+
+            renderCheckins(dateStr);
+            renderTable(dateStr);
+            const hours = data.studyHours[dateStr] || '';
+            document.getElementById('hoursInput').value = hours;
+        }
+
+        // ================================================================
+        //  备注
+        // ================================================================
+        function saveNote() {
+            const dateStr = formatDate(selectedDate);
+            const val = document.getElementById('noteInput').value.trim();
+            if (val) {
+                data.notes[dateStr] = val;
+            } else {
+                delete data.notes[dateStr];
+            }
+            saveData();
+            renderCalendar();
+            loadDataForDate(dateStr);
+            showToast(val ? '💾 备注已保存' : '🗑️ 备注已删除');
+        }
+
+        // ================================================================
+        //  打卡
+        // ================================================================
+        let checkinIdCounter = Date.now();
+
+        function renderCheckins(dateStr) {
+            const list = document.getElementById('checkinList');
+            const items = data.checkins[dateStr] || [];
+            if (items.length === 0) {
+                list.innerHTML = '<div class="empty-state">暂无打卡，添加一条吧 ✨</div>';
+                return;
+            }
+            list.innerHTML = '';
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'checkin-item';
+                div.dataset.id = item.id;
+
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.checked = item.completed || false;
+                cb.addEventListener('change', () => {
+                    item.completed = cb.checked;
+                    saveData();
+                    renderCheckins(dateStr);
+                    renderCalendar();
+                });
+
+                const span = document.createElement('span');
+                span.className = `content${item.completed ? ' done' : ''}`;
+                span.textContent = item.content;
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'btn btn-sm btn-danger';
+                delBtn.textContent = '🗑️';
+                delBtn.addEventListener('click', () => {
+                    const idx = items.findIndex(i => i.id === item.id);
+                    if (idx !== -1) {
+                        items.splice(idx, 1);
+                        if (items.length === 0) delete data.checkins[dateStr];
+                        saveData();
+                        renderCheckins(dateStr);
+                        renderCalendar();
+                        showToast('已删除打卡');
+                    }
+                });
+
+                div.appendChild(cb);
+                div.appendChild(span);
+                div.appendChild(delBtn);
+                list.appendChild(div);
+            });
+        }
+
+        function addCheckin() {
+            const dateStr = formatDate(selectedDate);
+            const input = document.getElementById('checkinInput');
+            const val = input.value.trim();
+            if (!val) { showToast('⚠️ 请输入打卡内容'); return; }
+            if (!data.checkins[dateStr]) data.checkins[dateStr] = [];
+            data.checkins[dateStr].push({ id: ++checkinIdCounter, content: val, completed: false });
+            saveData();
+            input.value = '';
+            renderCheckins(dateStr);
+            renderCalendar();
+            showToast(`✅ 打卡添加：${val}`);
+        }
+        document.getElementById('checkinInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') addCheckin();
+        });
+
+        // ================================================================
+        //  表格
+        // ================================================================
+        let tableRowCounter = Date.now();
+
+        function renderTable(dateStr) {
+            const tbody = document.getElementById('tableBody');
+            const rows = data.tableData[dateStr] || [];
+            if (rows.length === 0) {
+                tbody.innerHTML =
+                    `<tr><td colspan="6" style="text-align:center;color:#aac0aa;padding:20px;">暂无数据，点击下方添加行</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = '';
+            rows.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                tr.dataset.index = index;
+
+                const tdIdx = document.createElement('td');
+                tdIdx.textContent = index + 1;
+                tdIdx.style.textAlign = 'center';
+                tdIdx.style.fontWeight = '500';
+                tdIdx.style.color = 'var(--green-600)';
+
+                const tdTime = document.createElement('td');
+                const inpTime = document.createElement('input');
+                inpTime.type = 'text';
+                inpTime.value = row.时间 || '';
+                inpTime.placeholder = '08:00';
+                inpTime.addEventListener('change', () => { row.时间 = inpTime.value.trim();
+                    saveData(); });
+                tdTime.appendChild(inpTime);
+
+                const tdTask = document.createElement('td');
+                const inpTask = document.createElement('input');
+                inpTask.type = 'text';
+                inpTask.value = row.任务 || '';
+                inpTask.placeholder = '学习内容';
+                inpTask.addEventListener('change', () => { row.任务 = inpTask.value.trim();
+                    saveData(); });
+                tdTask.appendChild(inpTask);
+
+                const tdNote = document.createElement('td');
+                const inpNote = document.createElement('input');
+                inpNote.type = 'text';
+                inpNote.value = row.备注 || '';
+                inpNote.placeholder = '详细备注…';
+                inpNote.addEventListener('change', () => { row.备注 = inpNote.value.trim();
+                    saveData(); });
+                tdNote.appendChild(inpNote);
+
+                const tdStatus = document.createElement('td');
+                const selStatus = document.createElement('select');
+                ['未开始', '进行中', '已完成', '延期'].forEach(o => {
+                    const opt = document.createElement('option');
+                    opt.value = o;
+                    opt.textContent = o;
+                    if (row.状态 === o) opt.selected = true;
+                    selStatus.appendChild(opt);
+                });
+                selStatus.addEventListener('change', () => { row.状态 = selStatus.value;
+                    saveData(); });
+                tdStatus.appendChild(selStatus);
+
+                const tdAction = document.createElement('td');
+                const delBtn = document.createElement('button');
+                delBtn.className = 'btn btn-sm btn-danger';
+                delBtn.textContent = '✕';
+                delBtn.addEventListener('click', () => {
+                    const idx = data.tableData[dateStr].indexOf(row);
+                    if (idx !== -1) {
+                        data.tableData[dateStr].splice(idx, 1);
+                        if (data.tableData[dateStr].length === 0) delete data.tableData[dateStr];
+                        saveData();
+                        renderTable(dateStr);
+                        showToast('已删除行');
+                    }
+                });
+                tdAction.appendChild(delBtn);
+
+                tr.appendChild(tdIdx);
+                tr.appendChild(tdTime);
+                tr.appendChild(tdTask);
+                tr.appendChild(tdNote);
+                tr.appendChild(tdStatus);
+                tr.appendChild(tdAction);
+                tbody.appendChild(tr);
+            });
+        }
+
+        function addTableRow() {
+            const dateStr = formatDate(selectedDate);
+            if (!data.tableData[dateStr]) data.tableData[dateStr] = [];
+            data.tableData[dateStr].push({ 时间: '', 任务: '', 备注: '', 状态: '未开始' });
+            saveData();
+            renderTable(dateStr);
+            showToast('➕ 已添加新行');
+        }
+
+        function clearTableData() {
+            const dateStr = formatDate(selectedDate);
+            if (!data.tableData[dateStr] || data.tableData[dateStr].length === 0) {
+                showToast('⚠️ 今日表格已为空');
+                return;
+            }
+            if (confirm(`确定要清空 ${dateStrToDisplay(dateStr)} 的所有表格数据吗？`)) {
+                delete data.tableData[dateStr];
+                saveData();
+                renderTable(dateStr);
+                showToast('🗑️ 已清空');
+            }
+        }
+
+        function exportExcel() {
+            const dateStr = formatDate(selectedDate);
+            const rows = data.tableData[dateStr] || [];
+            if (rows.length === 0) { showToast('⚠️ 今日表格无数据可导出'); return; }
+            try {
+                const wb = XLSX.utils.book_new();
+                const header = ['序号', '时间', '任务', '详细备注', '状态'];
+                const wsData = [header];
+                rows.forEach((row, i) => {
+                    wsData.push([String(i + 1), row.时间 || '', row.任务 || '', row.备注 || '', row.状态 || '未开始']);
+                });
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                ws['!cols'] = [{ wch: 6 }, { wch: 12 }, { wch: 18 }, { wch: 28 }, { wch: 12 }];
+                XLSX.utils.book_append_sheet(wb, ws, '打卡记录');
+                XLSX.writeFile(wb, `学习打卡_${dateStr}.xlsx`);
+                showToast(`📥 已导出：学习打卡_${dateStr}.xlsx`);
+            } catch (e) { showToast('⚠️ 导出失败：' + e.message);
+                console.error(e); }
+        }
+
+        // ================================================================
+        //  艾宾浩斯 - 全新实现
+        // ================================================================
+        let selectedEbbinghausId = null;
+
+        // 添加内容
+        function addEbbinghausItem() {
+            const input = document.getElementById('ebbinghausInput');
+            const dateInput = document.getElementById('ebbinghausDate');
+            const content = input.value.trim();
+            if (!content) { showToast('⚠️ 请输入要背的内容'); return; }
+            let startDate = dateInput.value || formatDate(new Date());
+            // 检查是否已存在相同内容
+            if (data.ebbinghausItems.some(item => item.content === content)) {
+                showToast('⚠️ 该内容已存在，请勿重复添加');
+                return;
+            }
+            // 计算复习日期：间隔 1,2,4,7,15,30 天
+            const intervals = [1, 2, 4, 7, 15, 30];
+            const base = parseDate(startDate);
+            const reviewDates = intervals.map(day => {
+                const d = new Date(base);
+                d.setDate(d.getDate() + day);
+                return formatDate(d);
+            });
+
+            const newItem = {
+                id: ++checkinIdCounter,
+                content: content,
+                startDate: startDate,
+                reviewDates: reviewDates,
+                completed: false
+            };
+            data.ebbinghausItems.push(newItem);
+            saveData();
+            input.value = '';
+            dateInput.value = '';
+            renderEbbinghausList();
+            renderCalendar();
+            // 自动选中新添加的内容
+            selectedEbbinghausId = newItem.id;
+            drawEbbinghausChart(newItem);
+            showToast(`✅ 已添加背诵内容：${content}`);
+        }
+
+        // 删除内容
+        function deleteEbbinghausItem(id) {
+            if (!confirm('确定要删除这个背诵内容及其复习计划吗？')) return;
+            const idx = data.ebbinghausItems.findIndex(item => item.id === id);
+            if (idx !== -1) {
+                data.ebbinghausItems.splice(idx, 1);
+                if (selectedEbbinghausId === id) {
+                    selectedEbbinghausId = null;
+                    document.getElementById('chartPlaceholder').style.display = 'block';
+                    document.getElementById('ebbinghausChart').style.display = 'none';
+                }
+                saveData();
+                renderEbbinghausList();
+                renderCalendar();
+                showToast('🗑️ 已删除');
+            }
+        }
+
+        // 选中内容显示曲线
+        function selectEbbinghausItem(id) {
+            const item = data.ebbinghausItems.find(i => i.id === id);
+            if (!item) return;
+            selectedEbbinghausId = id;
+            drawEbbinghausChart(item);
+            // 高亮列表项
+            document.querySelectorAll('.ebbinghaus-item').forEach(el => el.classList.remove('active'));
+            const target = document.querySelector(`.ebbinghaus-item[data-id="${id}"]`);
+            if (target) target.classList.add('active');
+        }
+
+        // 绘制单个内容的复习曲线
+        function drawEbbinghausChart(item) {
+            const canvas = document.getElementById('ebbinghausChart');
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement;
+            const width = canvas.width = container.clientWidth - 20 || 600;
+            const height = canvas.height = 160;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // 显示图表，隐藏占位
+            document.getElementById('chartPlaceholder').style.display = 'none';
+            canvas.style.display = 'block';
+
+            if (!item || !item.reviewDates || item.reviewDates.length === 0) {
+                ctx.fillStyle = '#aac0aa';
+                ctx.font = '14px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('该内容暂无复习计划', width / 2, height / 2);
+                return;
+            }
+
+            const dates = item.reviewDates.slice().sort();
+            const start = parseDate(item.startDate);
+            const today = new Date();
+            // 横轴日期范围：从startDate到最后一个复习日期，或者到今天（如果今天在之后）
+            const lastDate = parseDate(dates[dates.length - 1]);
+            const endDate = lastDate > today ? lastDate : today;
+            const daysDiff = Math.ceil((endDate - start) / (1000 * 60 * 60 * 24)) + 1;
+            const maxDays = Math.max(daysDiff, 10);
+
+            // 绘制网格
+            ctx.strokeStyle = 'rgba(92,168,92,0.15)';
+            ctx.lineWidth = 0.5;
+            const padding = { top: 20, bottom: 25, left: 30, right: 15 };
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+
+            // 纵轴标记 (复习次数)
+            const maxCount = dates.length;
+            for (let i = 0; i <= maxCount; i++) {
+                const y = padding.top + chartHeight - (i / maxCount) * chartHeight;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(width - padding.right, y);
+                ctx.stroke();
+                ctx.fillStyle = '#8aa88a';
+                ctx.font = '10px sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText(i, padding.left - 4, y + 3);
+            }
+
+            // 绘制每个复习日期对应的点（折线图）
+            const xScale = chartWidth / (dates.length - 1 || 1);
+            const points = dates.map((d, i) => {
+                const dateObj = parseDate(d);
+                const x = padding.left + i * xScale;
+                const y = padding.top + chartHeight - (i + 1) / maxCount * chartHeight;
+                return { x, y, date: d, index: i + 1 };
+            });
+
+            // 绘制折线
+            if (points.length > 1) {
+                ctx.beginPath();
+                ctx.strokeStyle = '#8e44ad';
+                ctx.lineWidth = 2;
+                points.forEach((p, i) => {
+                    if (i === 0) ctx.moveTo(p.x, p.y);
+                    else ctx.lineTo(p.x, p.y);
+                });
+                ctx.stroke();
+            }
+
+            // 绘制点
+            points.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 4, 0, 2 * Math.PI);
+                ctx.fillStyle = '#8e44ad';
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // 标日期
+                ctx.fillStyle = '#4a6a4a';
+                ctx.font = '9px sans-serif';
+                ctx.textAlign = 'center';
+                const label = p.date.slice(5);
+                ctx.fillText(label, p.x, padding.top + chartHeight + 14);
+                // 标复习序号
+                ctx.fillStyle = '#8e44ad';
+                ctx.font = 'bold 9px sans-serif';
+                ctx.fillText('#' + p.index, p.x, p.y - 8);
+            });
+
+            // 标题
+            ctx.fillStyle = '#2a752a';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(`📈 复习曲线 · ${item.content}`, padding.left, 14);
+
+            // 标记未来复习（今天之后的复习日期）
+            const todayStr = formatDate(new Date());
+            points.forEach(p => {
+                if (p.date > todayStr) {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI);
+                    ctx.strokeStyle = '#e67e22';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            });
+        }
+
+        // 渲染内容列表（带搜索过滤）
+        function renderEbbinghausList() {
+            const list = document.getElementById('ebbinghausList');
+            const searchVal = document.getElementById('ebbinghausSearch').value.trim().toLowerCase();
+            let items = data.ebbinghausItems || [];
+            if (searchVal) {
+                items = items.filter(item => item.content.toLowerCase().includes(searchVal));
+            }
+            if (items.length === 0) {
+                list.innerHTML = '<div class="empty-state">没有匹配的背诵内容</div>';
+                // 如果无内容，清空图表
+                if (data.ebbinghausItems.length === 0) {
+                    document.getElementById('chartPlaceholder').style.display = 'block';
+                    document.getElementById('ebbinghausChart').style.display = 'none';
+                    selectedEbbinghausId = null;
+                }
+                return;
+            }
+            list.innerHTML = '';
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'ebbinghaus-item';
+                div.dataset.id = item.id;
+                if (selectedEbbinghausId === item.id) div.classList.add('active');
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'name';
+                nameSpan.textContent = item.content;
+
+                const meta = document.createElement('span');
+                meta.className = 'meta';
+                const nextReview = item.reviewDates.find(d => d >= formatDate(new Date()));
+                meta.textContent = nextReview ? `下次复习 ${nextReview.slice(5)}` : '已结束';
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'del-btn';
+                delBtn.textContent = '✕';
+                delBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteEbbinghausItem(item.id);
+                });
+
+                div.appendChild(nameSpan);
+                div.appendChild(meta);
+                div.appendChild(delBtn);
+
+                div.addEventListener('click', () => {
+                    selectEbbinghausItem(item.id);
+                });
+
+                list.appendChild(div);
+            });
+
+            // 如果当前选中的内容在过滤后不可见，清除选择
+            if (selectedEbbinghausId !== null) {
+                const stillExists = items.some(i => i.id === selectedEbbinghausId);
+                if (!stillExists) {
+                    selectedEbbinghausId = null;
+                    document.getElementById('chartPlaceholder').style.display = 'block';
+                    document.getElementById('ebbinghausChart').style.display = 'none';
+                } else {
+                    // 确保曲线显示
+                    const item = data.ebbinghausItems.find(i => i.id === selectedEbbinghausId);
+                    if (item) drawEbbinghausChart(item);
+                }
+            }
+        }
+
+        // 搜索输入事件
+        document.getElementById('ebbinghausSearch').addEventListener('input', renderEbbinghausList);
+
+        function clearSearch() {
+            document.getElementById('ebbinghausSearch').value = '';
+            renderEbbinghausList();
+        }
+
+        // 回车添加
+        document.getElementById('ebbinghausInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') addEbbinghausItem();
+        });
+        document.getElementById('ebbinghausDate').value = formatDate(new Date());
+
+        // ================================================================
+        //  学习时长
+        // ================================================================
+        function saveHours() {
+            const dateStr = formatDate(selectedDate);
+            const input = document.getElementById('hoursInput');
+            let val = parseFloat(input.value);
+            if (isNaN(val) || val < 0) val = 0;
+            if (val > 24) val = 24;
+            if (val === 0) {
+                delete data.studyHours[dateStr];
+            } else {
+                data.studyHours[dateStr] = val;
+            }
+            saveData();
+            renderCalendar();
+            renderHoursChart();
+            updateAnalysis();
+            showToast(val > 0 ? `⏱️ 已记录 ${val} 小时` : '🗑️ 已清空今日时长');
+        }
+
+        function clearHours() {
+            const dateStr = formatDate(selectedDate);
+            delete data.studyHours[dateStr];
+            saveData();
+            document.getElementById('hoursInput').value = '';
+            renderCalendar();
+            renderHoursChart();
+            updateAnalysis();
+            showToast('🗑️ 已清空今日学习时长');
+        }
+
+        function renderHoursChart() {
+            const canvas = document.getElementById('hoursChart');
+            const ctx = canvas.getContext('2d');
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const width = canvas.width = canvas.parentElement.clientWidth - 20 || 600;
+            const height = canvas.height = 180;
+
+            ctx.clearRect(0, 0, width, height);
+
+            const today = new Date();
+            const dates = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(today);
+                d.setDate(d.getDate() - i);
+                dates.push(formatDate(d));
+            }
+
+            const hoursData = dates.map(d => data.studyHours[d] || 0);
+            const maxVal = Math.max(...hoursData, 1);
+
+            const padding = { top: 20, bottom: 25, left: 30, right: 20 };
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+            const barWidth = chartWidth / dates.length * 0.6;
+            const gap = chartWidth / dates.length * 0.4;
+
+            ctx.strokeStyle = 'rgba(92,168,92,0.15)';
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i <= 4; i++) {
+                const y = padding.top + chartHeight - (i / 4) * chartHeight;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(width - padding.right, y);
+                ctx.stroke();
+                ctx.fillStyle = '#8aa88a';
+                ctx.font = '10px sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText(Math.round((i / 4) * maxVal * 10) / 10, padding.left - 4, y + 3);
+            }
+
+            const colors = ['#81bf81', '#5ca85c', '#3d8f3d', '#2a752a', '#5ca85c', '#81bf81', '#a5cfa5'];
+            dates.forEach((d, i) => {
+                const x = padding.left + i * (barWidth + gap) + gap / 2;
+                const val = hoursData[i];
+                const barHeight = (val / maxVal) * chartHeight;
+                const y = padding.top + chartHeight - barHeight;
+
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.shadowColor = 'rgba(0,0,0,0.06)';
+                ctx.shadowBlur = 6;
+                ctx.fillRect(x, y, barWidth, barHeight);
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = '#1e2e1e';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(val > 0 ? val.toFixed(1) : '0', x + barWidth / 2, y - 4);
+
+                ctx.fillStyle = '#4a6a4a';
+                ctx.font = '10px sans-serif';
+                ctx.fillText(d.slice(5), x + barWidth / 2, height - 4);
+            });
+
+            ctx.fillStyle = '#2a752a';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('📈 近7天学习时长 (小时)', padding.left, 14);
+        }
+
+        function updateAnalysis() {
+            const todayStr = formatDate(new Date());
+            const todayHours = data.studyHours[todayStr] || 0;
+            const days = [];
+            for (let i = 1; i <= 6; i++) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                days.push(formatDate(d));
+            }
+            const pastHours = days.map(d => data.studyHours[d] || 0);
+            const avgPast = pastHours.reduce((a, b) => a + b, 0) / (pastHours.length || 1);
+            const maxPast = Math.max(...pastHours, 0);
+            const minPast = Math.min(...pastHours, 0);
+
+            let analysis = '';
+            if (todayHours === 0 && pastHours.every(h => h === 0)) {
+                analysis = '📊 暂无学习数据，建议每天记录学习时长，追踪进步。';
+            } else {
+                const diff = todayHours - avgPast;
+                let trend = '';
+                if (diff > 0.5) trend = '📈 今天比近6天平均多学了 ' + diff.toFixed(1) + ' 小时，非常棒！继续保持！';
+                else if (diff < -0.5) trend = '📉 今天比近6天平均少学了 ' + (-diff).toFixed(1) + ' 小时，建议适当增加学习时间。';
+                else trend = '➡️ 今天学习时长与近6天平均持平，稳定是好事。';
+
+                let advice = '';
+                if (todayHours > 8) advice = '⚠️ 今天学习时间较长，注意劳逸结合，避免疲劳。';
+                else if (todayHours < 2 && todayHours > 0) advice = '💡 今天学习时间较少，可以尝试增加一些专注时段。';
+                else if (todayHours === 0) advice = '📅 今天还没有学习记录，记得安排时间哦！';
+                else advice = '✅ 今天学习时长合理，继续保持良好节奏。';
+
+                if (todayHours > 0) {
+                    analysis =
+                    `📊 今日学习 <span class="highlight">${todayHours}</span> 小时，近6天平均 ${avgPast.toFixed(1)} 小时。${trend} ${advice}`;
+                } else {
+                    analysis =
+                    `📊 今日尚未记录学习时长。近6天平均 ${avgPast.toFixed(1)} 小时。${advice}`;
+                }
+            }
+            document.getElementById('analysisText').innerHTML = analysis;
+        }
+
+        // ================================================================
+        //  数据同步
+        // ================================================================
+        function exportAllData() {
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `学习计划数据_${formatDate(new Date())}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('📥 数据已导出');
+        }
+
+        function importAllData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    const def = getDefaultData();
+                    for (const key in def) {
+                        if (!(key in imported)) { showToast('⚠️ 数据格式不完整'); return; }
+                    }
+                    if (confirm('导入将覆盖当前所有数据，确定继续吗？')) {
+                        data = imported;
+                        saveData();
+                        renderCalendar();
+                        showToast('📤 数据导入成功！');
+                    }
+                } catch (_) { showToast('⚠️ 导入失败，请检查文件格式'); }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function copyDataText() {
+            const json = JSON.stringify(data, null, 2);
+            navigator.clipboard.writeText(json).then(() => {
+                showToast('📋 已复制数据到剪贴板');
+            }).catch(() => {
+                const ta = document.createElement('textarea');
+                ta.value = json;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                ta.remove();
+                showToast('📋 已复制数据到剪贴板');
+            });
+        }
+
+        // ================================================================
+        //  导航
+        // ================================================================
+        document.getElementById('prevMonth').addEventListener('click', () => {
+            if (currentMonth === 0) { currentMonth = 11;
+                currentYear--; } else currentMonth--;
+            renderCalendar();
+        });
+        document.getElementById('nextMonth').addEventListener('click', () => {
+            if (currentMonth === 11) { currentMonth = 0;
+                currentYear++; } else currentMonth++;
+            renderCalendar();
+        });
+        document.getElementById('todayBtn').addEventListener('click', () => {
+            const now = new Date();
+            currentYear = now.getFullYear();
+            currentMonth = now.getMonth();
+            selectedDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            renderCalendar();
+        });
+
+        // ================================================================
+        //  自动保存备注
+        // ================================================================
+        let noteTimer = null;
+        document.getElementById('noteInput').addEventListener('input', () => {
+            clearTimeout(noteTimer);
+            noteTimer = setTimeout(() => {
+                const dateStr = formatDate(selectedDate);
+                const val = document.getElementById('noteInput').value.trim();
+                if (val) { data.notes[dateStr] = val; } else { delete data.notes[dateStr]; }
+                saveData();
+                renderCalendar();
+                loadDataForDate(dateStr);
+            }, 800);
+        });
+
+        // ================================================================
+        //  窗口变化重绘图表
+        // ================================================================
+        let resizeTimer = null;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                renderHoursChart();
+                if (selectedEbbinghausId !== null) {
+                    const item = data.ebbinghausItems.find(i => i.id === selectedEbbinghausId);
+                    if (item) drawEbbinghausChart(item);
+                }
+            }, 200);
+        });
+
+        // ================================================================
+        //  初始化
+        // ================================================================
+        const now = new Date();
+        selectedDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        renderCalendar();
+
+        console.log('📚 学习计划管理器 智能复习版已启动！');
+        console.log('💡 添加背诵内容后自动生成复习计划，点击内容查看独立曲线。');
+    </script>
+</body>
+</html>

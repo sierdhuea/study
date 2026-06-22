@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📚 学习计划管理器 · 智能复习</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>📚 学习计划 · 沉浸倒计时</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
     </script>
     <style>
@@ -34,12 +34,14 @@
             --bg-body: #f5faf5;
             --card-bg: rgba(255, 255, 255, 0.88);
             --border-light: rgba(92, 168, 92, 0.15);
+            --text-primary: #1a2e1a;
+            --text-muted: #7a9a7a;
         }
 
         body {
             font-family: var(--font);
             background: var(--bg-body);
-            color: #1e2e1e;
+            color: var(--text-primary);
             min-height: 100vh;
             padding: 20px;
             background-image: radial-gradient(ellipse at 10% 20%, rgba(165, 207, 165, 0.30) 0%, transparent 60%),
@@ -224,6 +226,14 @@
         }
         .btn-success:hover {
             background: var(--green-600);
+        }
+        .btn-accent {
+            background: linear-gradient(135deg, #e87a3e, #c96a2e);
+            color: #fff;
+        }
+        .btn-accent:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(232, 122, 62, 0.35);
         }
 
         .main-grid {
@@ -454,6 +464,7 @@
             margin-left: auto;
         }
 
+        /* ===== 备注 ===== */
         .note-area {
             display: flex;
             gap: 10px;
@@ -496,6 +507,7 @@
             font-style: italic;
         }
 
+        /* ===== 打卡 ===== */
         .checkin-input-group {
             display: flex;
             gap: 10px;
@@ -631,7 +643,7 @@
             margin-top: 6px;
         }
 
-        /* ===== 艾宾浩斯全新样式 ===== */
+        /* ===== 艾宾浩斯 ===== */
         .ebbinghaus-container {
             display: flex;
             flex-direction: column;
@@ -839,6 +851,365 @@
             color: var(--green-700);
         }
 
+        /* ===== 数据同步 ===== */
+        .sync-textarea {
+            width: 100%;
+            min-height: 140px;
+            padding: 14px 18px;
+            border: 2px solid var(--green-200);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+            background: var(--bg-body);
+            color: var(--text-primary);
+            resize: vertical;
+            transition: var(--transition);
+            line-height: 1.6;
+            tab-size: 2;
+        }
+        .sync-textarea:focus {
+            border-color: var(--green-500);
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(92, 168, 92, 0.08);
+            outline: none;
+        }
+        .sync-textarea::placeholder {
+            color: var(--text-muted);
+            font-family: var(--font);
+        }
+        .sync-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        .sync-actions .btn {
+            flex: 1 1 auto;
+            min-width: 80px;
+            justify-content: center;
+        }
+        .sync-info {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            padding: 10px 16px;
+            background: var(--green-50);
+            border-radius: var(--radius-sm);
+            border-left: 4px solid var(--green-500);
+        }
+        .sync-info i {
+            color: var(--green-500);
+            margin-right: 8px;
+        }
+        .sync-status {
+            margin-top: 10px;
+            padding: 10px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            display: none;
+        }
+        .sync-status.success {
+            display: block;
+            background: #e8f8f0;
+            color: #27ae60;
+            border: 1px solid #a9dfbf;
+        }
+        .sync-status.error {
+            display: block;
+            background: #fde8e8;
+            color: #c0392b;
+            border: 1px solid #f5b7b1;
+        }
+        .sync-status.info {
+            display: block;
+            background: #e3f0ff;
+            color: #2c6b9e;
+            border: 1px solid #a9cce3;
+        }
+
+        /* ================================================================
+           学习倒计时 — 全新沉浸组件
+           ================================================================ */
+        .timer-card {
+            position: relative;
+            overflow: hidden;
+        }
+        .timer-card .timer-setup {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .timer-card .timer-setup input[type="number"] {
+            width: 80px;
+            padding: 8px 12px;
+            border: 2px solid var(--green-200);
+            border-radius: var(--radius-sm);
+            font-size: 16px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.6);
+            transition: var(--transition);
+            color: var(--text-primary);
+            text-align: center;
+        }
+        .timer-card .timer-setup input[type="number"]:focus {
+            outline: none;
+            border-color: var(--green-500);
+            box-shadow: 0 0 0 4px rgba(92, 168, 92, 0.12);
+            background: #fff;
+        }
+        .timer-card .timer-setup .unit {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-right: 6px;
+        }
+
+        .timer-display-wrap {
+            cursor: pointer;
+            transition: var(--transition);
+            border-radius: var(--radius-sm);
+            padding: 12px 8px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.3);
+            border: 2px dashed var(--green-200);
+            user-select: none;
+            position: relative;
+        }
+        .timer-display-wrap:hover {
+            background: rgba(255, 255, 255, 0.6);
+            border-color: var(--green-400);
+        }
+        .timer-display-wrap .hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            opacity: 0.6;
+        }
+        .timer-display {
+            font-size: 52px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            font-variant-numeric: tabular-nums;
+            color: var(--green-800);
+            font-family: 'Courier New', monospace;
+            line-height: 1.2;
+        }
+        .timer-display .colon {
+            color: var(--green-400);
+        }
+
+        .timer-progress {
+            width: 100%;
+            height: 6px;
+            background: var(--green-100);
+            border-radius: 20px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        .timer-progress .bar {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, var(--green-500), var(--green-300));
+            border-radius: 20px;
+            transition: width 0.3s ease;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        .timer-controls .btn {
+            flex: 1;
+            justify-content: center;
+            min-width: 60px;
+        }
+
+        /* 倒计时结束闪烁 */
+        .timer-flash {
+            animation: timerFlash 0.5s ease 3;
+        }
+        @keyframes timerFlash {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.2;
+            }
+        }
+
+        /* ===== 全屏倒计时覆盖层 ===== */
+        #timerFullscreen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 99999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            background: #1a2e1a;
+            transition: background 0.8s ease;
+            overflow: hidden;
+        }
+        #timerFullscreen.active {
+            display: flex;
+            animation: fsFadeIn 0.6s ease;
+        }
+        @keyframes fsFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.96);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        #timerFullscreen .fs-bg-glow {
+            position: absolute;
+            top: -30%;
+            left: -30%;
+            width: 160%;
+            height: 160%;
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.05) 0%, transparent 60%);
+            pointer-events: none;
+            animation: glowPulse 4s ease-in-out infinite alternate;
+        }
+        @keyframes glowPulse {
+            0% {
+                transform: scale(1) rotate(0deg);
+                opacity: 0.4;
+            }
+            100% {
+                transform: scale(1.2) rotate(8deg);
+                opacity: 0.9;
+            }
+        }
+
+        #timerFullscreen .fs-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: 40px;
+            max-width: 90vw;
+        }
+
+        #timerFullscreen .fs-time {
+            font-size: clamp(80px, 18vw, 220px);
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 8px;
+            color: #fff;
+            text-shadow: 0 8px 48px rgba(0, 0, 0, 0.25);
+            line-height: 1.1;
+            font-variant-numeric: tabular-nums;
+        }
+
+        #timerFullscreen .fs-label {
+            font-size: clamp(16px, 2vw, 28px);
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 300;
+            letter-spacing: 4px;
+            margin-top: 8px;
+        }
+
+        #timerFullscreen .fs-progress-wrap {
+            width: min(500px, 70vw);
+            height: 4px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            margin-top: 28px;
+            overflow: hidden;
+        }
+        #timerFullscreen .fs-progress-wrap .fs-bar {
+            height: 100%;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 20px;
+            transition: width 0.3s ease;
+        }
+
+        #timerFullscreen .fs-info {
+            display: flex;
+            gap: 40px;
+            margin-top: 18px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: clamp(12px, 1.2vw, 18px);
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+        #timerFullscreen .fs-info span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        #timerFullscreen .fs-exit-btn {
+            position: fixed;
+            top: 24px;
+            right: 28px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: rgba(255, 255, 255, 0.5);
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: var(--transition);
+            z-index: 10;
+            font-family: var(--font);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+        #timerFullscreen .fs-exit-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            transform: scale(1.04);
+        }
+
+        #timerFullscreen .fs-status {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 12px;
+            letter-spacing: 2px;
+            z-index: 10;
+            font-weight: 300;
+        }
+
+        /* 全屏模式下的颜色过渡装饰 */
+        #timerFullscreen .fs-color-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80vmin;
+            height: 80vmin;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
+            pointer-events: none;
+            animation: ringRotate 30s linear infinite;
+        }
+        @keyframes ringRotate {
+            0% {
+                transform: translate(-50%, -50%) rotate(0deg);
+            }
+            100% {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
+        }
+
         /* ===== 右键菜单 ===== */
         .context-menu {
             display: none;
@@ -951,6 +1322,34 @@
                 font-size: 13px;
                 padding: 2px 12px;
             }
+            .sync-actions .btn {
+                min-width: 70px;
+                font-size: 12px;
+                padding: 6px 12px;
+            }
+            .sync-textarea {
+                min-height: 120px;
+                font-size: 12px;
+            }
+            .timer-display {
+                font-size: 32px;
+                letter-spacing: 2px;
+            }
+            #timerFullscreen .fs-time {
+                font-size: clamp(50px, 14vw, 120px);
+                letter-spacing: 4px;
+            }
+            #timerFullscreen .fs-info {
+                gap: 16px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            #timerFullscreen .fs-exit-btn {
+                top: 14px;
+                right: 16px;
+                padding: 6px 14px;
+                font-size: 11px;
+            }
         }
 
         .hidden-input {
@@ -960,7 +1359,7 @@
             display: inline-block;
             padding: 2px 12px;
             border-radius: 20px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
         }
         .status-badge.done {
@@ -997,6 +1396,26 @@
         </div>
     </div>
 
+    <!-- ===== 全屏倒计时覆盖层 ===== -->
+    <div id="timerFullscreen">
+        <div class="fs-color-ring"></div>
+        <div class="fs-bg-glow"></div>
+        <button class="fs-exit-btn" id="fsExitBtn"><i class="fas fa-compress-alt"></i> 退出全屏</button>
+        <div class="fs-content">
+            <div class="fs-time" id="fsTime">25:00</div>
+            <div class="fs-label" id="fsLabel">⏳ 专注学习</div>
+            <div class="fs-progress-wrap">
+                <div class="fs-bar" id="fsProgressBar" style="width:100%"></div>
+            </div>
+            <div class="fs-info">
+                <span id="fsElapsed">⏱️ 已过 0:00</span>
+                <span id="fsRemain">⏳ 剩余 25:00</span>
+                <span id="fsPercent">📊 0%</span>
+            </div>
+        </div>
+        <div class="fs-status">双击退出 · 沉浸学习</div>
+    </div>
+
     <!-- ===== 主容器 ===== -->
     <div class="app-container">
 
@@ -1005,14 +1424,13 @@
             <div class="header-left">
                 <span class="emoji-big">📚</span>
                 <h1>学习计划管理器</h1>
-                <span style="font-size:13px;color:var(--green-600);font-weight:500;background:var(--green-100);padding:2px 14px;border-radius:20px;">智能复习</span>
+                <span style="font-size:13px;color:var(--green-600);font-weight:500;background:var(--green-100);padding:2px 14px;border-radius:20px;">沉浸倒计时</span>
             </div>
             <div class="header-right">
                 <span class="beijing-time" id="beijingTime">🕒 加载中...</span>
-                <button class="btn btn-outline" onclick="exportAllData()">📥 导出数据</button>
-                <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">📤 导入数据</button>
-                <input type="file" id="importFile" class="hidden-input" accept=".json" onchange="importAllData(event)">
-                <button class="btn btn-outline" onclick="copyDataText()">📋 复制文本</button>
+                <button class="btn btn-outline" onclick="syncExport()">📥 导出数据</button>
+                <button class="btn btn-outline" onclick="syncCopy()">📋 复制文本</button>
+                <button class="btn btn-outline" onclick="syncImport()">📤 导入数据</button>
             </div>
         </header>
 
@@ -1110,29 +1528,25 @@
                     </div>
                 </div>
 
-                <!-- ===== 艾宾浩斯记忆曲线 (全新) ===== -->
+                <!-- ===== 艾宾浩斯记忆曲线 ===== -->
                 <div class="card">
                     <div class="card-title">
                         🧠 背诵内容 · 复习曲线
                         <span class="badge">独立曲线</span>
                     </div>
                     <div class="ebbinghaus-container">
-                        <!-- 输入 -->
                         <div class="ebbinghaus-input-row">
                             <input type="text" id="ebbinghausInput" placeholder="输入要背的内容…" maxlength="60">
                             <input type="date" id="ebbinghausDate">
                             <button class="btn btn-primary" onclick="addEbbinghausItem()">➕ 添加</button>
                         </div>
-                        <!-- 搜索 -->
                         <div class="ebbinghaus-search-row">
                             <input type="text" id="ebbinghausSearch" placeholder="🔍 搜索内容…">
                             <button class="btn btn-sm btn-outline" onclick="clearSearch()">清除</button>
                         </div>
-                        <!-- 内容列表 -->
                         <div class="ebbinghaus-list" id="ebbinghausList">
                             <div class="empty-state">暂无背诵内容，添加一条吧 📖</div>
                         </div>
-                        <!-- 曲线图 -->
                         <div class="ebbinghaus-chart-container" id="ebbinghausChartContainer">
                             <canvas id="ebbinghausChart" width="600" height="160"></canvas>
                             <div class="ebbinghaus-chart-placeholder" id="chartPlaceholder">点击上方内容查看复习曲线</div>
@@ -1162,11 +1576,64 @@
                     </div>
                 </div>
 
+                <!-- ===== 🆕 学习倒计时 ===== -->
+                <div class="card timer-card">
+                    <div class="card-title">
+                        ⏱️ 学习倒计时
+                        <span class="badge">双击放大</span>
+                    </div>
+                    <div class="timer-setup">
+                        <input type="number" id="timerMinutes" value="25" min="1" max="180" step="1">
+                        <span class="unit">分钟</span>
+                        <button class="btn btn-accent btn-sm" id="timerStartBtn"><i class="fas fa-play"></i> 开始</button>
+                        <button class="btn btn-outline btn-sm" id="timerPauseBtn" style="display:none;"><i class="fas fa-pause"></i> 暂停</button>
+                        <button class="btn btn-outline btn-sm" id="timerResetBtn"><i class="fas fa-undo"></i> 重置</button>
+                    </div>
+                    <div class="timer-display-wrap" id="timerDisplayWrap" title="双击全屏沉浸">
+                        <div class="timer-display" id="timerDisplay">
+                            <span id="timerMin">25</span><span class="colon">:</span><span id="timerSec">00</span>
+                        </div>
+                        <div class="hint">⤴ 双击放大 · 沉浸学习</div>
+                    </div>
+                    <div class="timer-progress">
+                        <div class="bar" id="timerProgressBar" style="width:100%"></div>
+                    </div>
+                    <div class="timer-controls">
+                        <button class="btn btn-sm btn-outline" id="timerAdd5Btn"><i class="fas fa-plus"></i> +5分</button>
+                        <button class="btn btn-sm btn-outline" id="timerSub5Btn"><i class="fas fa-minus"></i> -5分</button>
+                        <span style="font-size:12px;color:var(--text-muted);margin-left:auto;" id="timerStatus">就绪</span>
+                    </div>
+                </div>
+
+                <!-- ===== 数据同步 ===== -->
+                <div class="card" id="syncCard">
+                    <div class="card-title">
+                        <i class="fas fa-cloud-upload-alt" style="color:var(--green-500);"></i> 数据同步
+                        <span class="badge">跨设备迁移</span>
+                    </div>
+                    <div class="sync-info">
+                        <i class="fas fa-info-circle"></i>
+                        导出当前所有数据（活动、打卡、表格、背诵、学习时长等）的原始 JSON。复制文本后，在另一设备的此页面粘贴并导入，即可完成数据同步。
+                    </div>
+                    <textarea class="sync-textarea" id="syncTextarea" placeholder="点击「导出数据」生成同步文本，或粘贴从其他设备复制的同步文本后点击「导入数据」…"></textarea>
+                    <div class="sync-actions">
+                        <button class="btn btn-primary" id="syncExportBtn"><i class="fas fa-download"></i> 导出数据</button>
+                        <button class="btn btn-outline" id="syncCopyBtn"><i class="fas fa-copy"></i> 复制文本</button>
+                        <button class="btn btn-success" id="syncImportBtn"><i class="fas fa-upload"></i> 导入数据</button>
+                        <button class="btn btn-outline" id="syncClearBtn"><i class="fas fa-eraser"></i> 清空</button>
+                    </div>
+                    <div class="sync-status" id="syncStatus"></div>
+                    <div style="margin-top:14px;font-size:12px;color:var(--text-muted);border-top:1px solid var(--green-200);padding-top:14px;display:flex;gap:20px;flex-wrap:wrap;">
+                        <span><i class="fas fa-database" style="color:var(--green-500);"></i> 导出原始数据，请确保传输安全</span>
+                        <span><i class="fas fa-exclamation-triangle" style="color:#E67E22;"></i> 导入将覆盖当前所有数据，请谨慎操作</span>
+                    </div>
+                </div>
+
             </div><!-- /right-col -->
         </div><!-- /main-grid -->
 
         <footer style="text-align:center;font-size:12px;color:var(--green-400);padding:12px 0 4px;border-top:1px solid var(--green-200);margin-top:8px;">
-            🌱 数据自动保存在浏览器 · 右键日历添加活动 · 背诵内容独立复习曲线
+            🌱 数据自动保存在浏览器 · 右键日历添加活动 · 双击倒计时沉浸全屏
         </footer>
     </div>
 
@@ -1191,8 +1658,7 @@
                 checkins: {},
                 tableData: {},
                 studyHours: {},
-                // 新结构：背诵内容数组
-                ebbinghausItems: [] // [ { id, content, startDate, reviewDates: [dateStr, ...], completed: boolean } ]
+                ebbinghausItems: [] // [ { id, content, startDate, reviewDates, completed } ]
             };
         }
 
@@ -1206,29 +1672,6 @@
                     const def = getDefaultData();
                     for (const key in def) {
                         if (!(key in parsed)) parsed[key] = def[key];
-                    }
-                    // 如果旧数据存在 ebbinghaus 数组，迁移为 ebbinghausItems
-                    if (parsed.ebbinghaus && Array.isArray(parsed.ebbinghaus) && parsed.ebbinghaus.length > 0) {
-                        // 检查是否已经是新结构（有reviewDates）
-                        if (!parsed.ebbinghaus[0].reviewDates) {
-                            // 旧结构：每个条目是 { id, content, date, completed }，我们转换为新结构
-                            const itemsMap = new Map();
-                            parsed.ebbinghaus.forEach(item => {
-                                const key = item.content + '|' + item.date;
-                                if (!itemsMap.has(key)) {
-                                    // 每个旧条目视为一个复习日，我们需要聚合
-                                    // 但为了简单，我们只取每个内容的第一个条目作为startDate，并收集所有日期作为reviewDates
-                                }
-                            });
-                            // 由于旧数据可能包含复习后缀，更复杂，我们直接重置并提示用户
-                            // 安全做法：清空并让用户重新添加
-                            parsed.ebbinghausItems = [];
-                            delete parsed.ebbinghaus;
-                            showToast('⚠️ 检测到旧版艾宾浩斯数据，已重置，请重新添加背诵内容。');
-                        } else {
-                            parsed.ebbinghausItems = parsed.ebbinghaus;
-                            delete parsed.ebbinghaus;
-                        }
                     }
                     return parsed;
                 }
@@ -1341,9 +1784,7 @@
             loadDataForDate(selectedStr);
             renderHoursChart();
             updateAnalysis();
-            // 刷新艾宾浩斯列表和图表
             renderEbbinghausList();
-            // 如果当前有选中内容，重绘曲线
             if (selectedEbbinghausId !== null) {
                 const item = data.ebbinghausItems.find(i => i.id === selectedEbbinghausId);
                 if (item) drawEbbinghausChart(item);
@@ -1370,7 +1811,6 @@
             if (checkins.length > 0) dots.push('checkin-dot');
             if (data.studyHours[dateStr]) dots.push('hours-dot');
 
-            // 检查当天是否有任何复习任务
             const hasReview = data.ebbinghausItems.some(item => item.reviewDates && item.reviewDates.includes(dateStr));
             if (hasReview) dots.push('ebbinghaus-dot');
 
@@ -1474,7 +1914,7 @@
         });
 
         // ================================================================
-        //  更新日期标签
+        //  日期标签
         // ================================================================
         function updateDateBadges(dateStr) {
             const display = dateStrToDisplay(dateStr);
@@ -1499,7 +1939,6 @@
                 noteDisplay.textContent = '暂无备注';
                 noteDisplay.className = 'note-display empty';
             }
-
             renderCheckins(dateStr);
             renderTable(dateStr);
             const hours = data.studyHours[dateStr] || '';
@@ -1728,23 +2167,20 @@
         }
 
         // ================================================================
-        //  艾宾浩斯 - 全新实现
+        //  艾宾浩斯
         // ================================================================
         let selectedEbbinghausId = null;
 
-        // 添加内容
         function addEbbinghausItem() {
             const input = document.getElementById('ebbinghausInput');
             const dateInput = document.getElementById('ebbinghausDate');
             const content = input.value.trim();
             if (!content) { showToast('⚠️ 请输入要背的内容'); return; }
             let startDate = dateInput.value || formatDate(new Date());
-            // 检查是否已存在相同内容
             if (data.ebbinghausItems.some(item => item.content === content)) {
                 showToast('⚠️ 该内容已存在，请勿重复添加');
                 return;
             }
-            // 计算复习日期：间隔 1,2,4,7,15,30 天
             const intervals = [1, 2, 4, 7, 15, 30];
             const base = parseDate(startDate);
             const reviewDates = intervals.map(day => {
@@ -1752,7 +2188,6 @@
                 d.setDate(d.getDate() + day);
                 return formatDate(d);
             });
-
             const newItem = {
                 id: ++checkinIdCounter,
                 content: content,
@@ -1766,13 +2201,11 @@
             dateInput.value = '';
             renderEbbinghausList();
             renderCalendar();
-            // 自动选中新添加的内容
             selectedEbbinghausId = newItem.id;
             drawEbbinghausChart(newItem);
             showToast(`✅ 已添加背诵内容：${content}`);
         }
 
-        // 删除内容
         function deleteEbbinghausItem(id) {
             if (!confirm('确定要删除这个背诵内容及其复习计划吗？')) return;
             const idx = data.ebbinghausItems.findIndex(item => item.id === id);
@@ -1790,32 +2223,25 @@
             }
         }
 
-        // 选中内容显示曲线
         function selectEbbinghausItem(id) {
             const item = data.ebbinghausItems.find(i => i.id === id);
             if (!item) return;
             selectedEbbinghausId = id;
             drawEbbinghausChart(item);
-            // 高亮列表项
             document.querySelectorAll('.ebbinghaus-item').forEach(el => el.classList.remove('active'));
             const target = document.querySelector(`.ebbinghaus-item[data-id="${id}"]`);
             if (target) target.classList.add('active');
         }
 
-        // 绘制单个内容的复习曲线
         function drawEbbinghausChart(item) {
             const canvas = document.getElementById('ebbinghausChart');
             const ctx = canvas.getContext('2d');
             const container = canvas.parentElement;
             const width = canvas.width = container.clientWidth - 20 || 600;
             const height = canvas.height = 160;
-
             ctx.clearRect(0, 0, width, height);
-
-            // 显示图表，隐藏占位
             document.getElementById('chartPlaceholder').style.display = 'none';
             canvas.style.display = 'block';
-
             if (!item || !item.reviewDates || item.reviewDates.length === 0) {
                 ctx.fillStyle = '#aac0aa';
                 ctx.font = '14px sans-serif';
@@ -1823,24 +2249,18 @@
                 ctx.fillText('该内容暂无复习计划', width / 2, height / 2);
                 return;
             }
-
             const dates = item.reviewDates.slice().sort();
             const start = parseDate(item.startDate);
             const today = new Date();
-            // 横轴日期范围：从startDate到最后一个复习日期，或者到今天（如果今天在之后）
             const lastDate = parseDate(dates[dates.length - 1]);
             const endDate = lastDate > today ? lastDate : today;
             const daysDiff = Math.ceil((endDate - start) / (1000 * 60 * 60 * 24)) + 1;
             const maxDays = Math.max(daysDiff, 10);
-
-            // 绘制网格
             ctx.strokeStyle = 'rgba(92,168,92,0.15)';
             ctx.lineWidth = 0.5;
             const padding = { top: 20, bottom: 25, left: 30, right: 15 };
             const chartWidth = width - padding.left - padding.right;
             const chartHeight = height - padding.top - padding.bottom;
-
-            // 纵轴标记 (复习次数)
             const maxCount = dates.length;
             for (let i = 0; i <= maxCount; i++) {
                 const y = padding.top + chartHeight - (i / maxCount) * chartHeight;
@@ -1853,8 +2273,6 @@
                 ctx.textAlign = 'right';
                 ctx.fillText(i, padding.left - 4, y + 3);
             }
-
-            // 绘制每个复习日期对应的点（折线图）
             const xScale = chartWidth / (dates.length - 1 || 1);
             const points = dates.map((d, i) => {
                 const dateObj = parseDate(d);
@@ -1862,8 +2280,6 @@
                 const y = padding.top + chartHeight - (i + 1) / maxCount * chartHeight;
                 return { x, y, date: d, index: i + 1 };
             });
-
-            // 绘制折线
             if (points.length > 1) {
                 ctx.beginPath();
                 ctx.strokeStyle = '#8e44ad';
@@ -1874,8 +2290,6 @@
                 });
                 ctx.stroke();
             }
-
-            // 绘制点
             points.forEach(p => {
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, 4, 0, 2 * Math.PI);
@@ -1884,26 +2298,18 @@
                 ctx.strokeStyle = '#fff';
                 ctx.lineWidth = 1;
                 ctx.stroke();
-
-                // 标日期
                 ctx.fillStyle = '#4a6a4a';
                 ctx.font = '9px sans-serif';
                 ctx.textAlign = 'center';
-                const label = p.date.slice(5);
-                ctx.fillText(label, p.x, padding.top + chartHeight + 14);
-                // 标复习序号
+                ctx.fillText(p.date.slice(5), p.x, padding.top + chartHeight + 14);
                 ctx.fillStyle = '#8e44ad';
                 ctx.font = 'bold 9px sans-serif';
                 ctx.fillText('#' + p.index, p.x, p.y - 8);
             });
-
-            // 标题
             ctx.fillStyle = '#2a752a';
             ctx.font = '12px sans-serif';
             ctx.textAlign = 'left';
             ctx.fillText(`📈 复习曲线 · ${item.content}`, padding.left, 14);
-
-            // 标记未来复习（今天之后的复习日期）
             const todayStr = formatDate(new Date());
             points.forEach(p => {
                 if (p.date > todayStr) {
@@ -1916,7 +2322,6 @@
             });
         }
 
-        // 渲染内容列表（带搜索过滤）
         function renderEbbinghausList() {
             const list = document.getElementById('ebbinghausList');
             const searchVal = document.getElementById('ebbinghausSearch').value.trim().toLowerCase();
@@ -1926,7 +2331,6 @@
             }
             if (items.length === 0) {
                 list.innerHTML = '<div class="empty-state">没有匹配的背诵内容</div>';
-                // 如果无内容，清空图表
                 if (data.ebbinghausItems.length === 0) {
                     document.getElementById('chartPlaceholder').style.display = 'block';
                     document.getElementById('ebbinghausChart').style.display = 'none';
@@ -1940,16 +2344,13 @@
                 div.className = 'ebbinghaus-item';
                 div.dataset.id = item.id;
                 if (selectedEbbinghausId === item.id) div.classList.add('active');
-
                 const nameSpan = document.createElement('span');
                 nameSpan.className = 'name';
                 nameSpan.textContent = item.content;
-
                 const meta = document.createElement('span');
                 meta.className = 'meta';
                 const nextReview = item.reviewDates.find(d => d >= formatDate(new Date()));
                 meta.textContent = nextReview ? `下次复习 ${nextReview.slice(5)}` : '已结束';
-
                 const delBtn = document.createElement('button');
                 delBtn.className = 'del-btn';
                 delBtn.textContent = '✕';
@@ -1957,19 +2358,12 @@
                     e.stopPropagation();
                     deleteEbbinghausItem(item.id);
                 });
-
                 div.appendChild(nameSpan);
                 div.appendChild(meta);
                 div.appendChild(delBtn);
-
-                div.addEventListener('click', () => {
-                    selectEbbinghausItem(item.id);
-                });
-
+                div.addEventListener('click', () => { selectEbbinghausItem(item.id); });
                 list.appendChild(div);
             });
-
-            // 如果当前选中的内容在过滤后不可见，清除选择
             if (selectedEbbinghausId !== null) {
                 const stillExists = items.some(i => i.id === selectedEbbinghausId);
                 if (!stillExists) {
@@ -1977,22 +2371,18 @@
                     document.getElementById('chartPlaceholder').style.display = 'block';
                     document.getElementById('ebbinghausChart').style.display = 'none';
                 } else {
-                    // 确保曲线显示
                     const item = data.ebbinghausItems.find(i => i.id === selectedEbbinghausId);
                     if (item) drawEbbinghausChart(item);
                 }
             }
         }
 
-        // 搜索输入事件
         document.getElementById('ebbinghausSearch').addEventListener('input', renderEbbinghausList);
 
         function clearSearch() {
             document.getElementById('ebbinghausSearch').value = '';
             renderEbbinghausList();
         }
-
-        // 回车添加
         document.getElementById('ebbinghausInput').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') addEbbinghausItem();
         });
@@ -2036,9 +2426,7 @@
             const rect = canvas.parentElement.getBoundingClientRect();
             const width = canvas.width = canvas.parentElement.clientWidth - 20 || 600;
             const height = canvas.height = 180;
-
             ctx.clearRect(0, 0, width, height);
-
             const today = new Date();
             const dates = [];
             for (let i = 6; i >= 0; i--) {
@@ -2046,16 +2434,13 @@
                 d.setDate(d.getDate() - i);
                 dates.push(formatDate(d));
             }
-
             const hoursData = dates.map(d => data.studyHours[d] || 0);
             const maxVal = Math.max(...hoursData, 1);
-
             const padding = { top: 20, bottom: 25, left: 30, right: 20 };
             const chartWidth = width - padding.left - padding.right;
             const chartHeight = height - padding.top - padding.bottom;
             const barWidth = chartWidth / dates.length * 0.6;
             const gap = chartWidth / dates.length * 0.4;
-
             ctx.strokeStyle = 'rgba(92,168,92,0.15)';
             ctx.lineWidth = 0.5;
             for (let i = 0; i <= 4; i++) {
@@ -2069,30 +2454,25 @@
                 ctx.textAlign = 'right';
                 ctx.fillText(Math.round((i / 4) * maxVal * 10) / 10, padding.left - 4, y + 3);
             }
-
             const colors = ['#81bf81', '#5ca85c', '#3d8f3d', '#2a752a', '#5ca85c', '#81bf81', '#a5cfa5'];
             dates.forEach((d, i) => {
                 const x = padding.left + i * (barWidth + gap) + gap / 2;
                 const val = hoursData[i];
                 const barHeight = (val / maxVal) * chartHeight;
                 const y = padding.top + chartHeight - barHeight;
-
                 ctx.fillStyle = colors[i % colors.length];
                 ctx.shadowColor = 'rgba(0,0,0,0.06)';
                 ctx.shadowBlur = 6;
                 ctx.fillRect(x, y, barWidth, barHeight);
                 ctx.shadowBlur = 0;
-
                 ctx.fillStyle = '#1e2e1e';
                 ctx.font = 'bold 11px sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillText(val > 0 ? val.toFixed(1) : '0', x + barWidth / 2, y - 4);
-
                 ctx.fillStyle = '#4a6a4a';
                 ctx.font = '10px sans-serif';
                 ctx.fillText(d.slice(5), x + barWidth / 2, height - 4);
             });
-
             ctx.fillStyle = '#2a752a';
             ctx.font = '12px sans-serif';
             ctx.textAlign = 'left';
@@ -2110,9 +2490,6 @@
             }
             const pastHours = days.map(d => data.studyHours[d] || 0);
             const avgPast = pastHours.reduce((a, b) => a + b, 0) / (pastHours.length || 1);
-            const maxPast = Math.max(...pastHours, 0);
-            const minPast = Math.min(...pastHours, 0);
-
             let analysis = '';
             if (todayHours === 0 && pastHours.every(h => h === 0)) {
                 analysis = '📊 暂无学习数据，建议每天记录学习时长，追踪进步。';
@@ -2122,13 +2499,11 @@
                 if (diff > 0.5) trend = '📈 今天比近6天平均多学了 ' + diff.toFixed(1) + ' 小时，非常棒！继续保持！';
                 else if (diff < -0.5) trend = '📉 今天比近6天平均少学了 ' + (-diff).toFixed(1) + ' 小时，建议适当增加学习时间。';
                 else trend = '➡️ 今天学习时长与近6天平均持平，稳定是好事。';
-
                 let advice = '';
                 if (todayHours > 8) advice = '⚠️ 今天学习时间较长，注意劳逸结合，避免疲劳。';
                 else if (todayHours < 2 && todayHours > 0) advice = '💡 今天学习时间较少，可以尝试增加一些专注时段。';
                 else if (todayHours === 0) advice = '📅 今天还没有学习记录，记得安排时间哦！';
                 else advice = '✅ 今天学习时长合理，继续保持良好节奏。';
-
                 if (todayHours > 0) {
                     analysis =
                     `📊 今日学习 <span class="highlight">${todayHours}</span> 小时，近6天平均 ${avgPast.toFixed(1)} 小时。${trend} ${advice}`;
@@ -2143,55 +2518,382 @@
         // ================================================================
         //  数据同步
         // ================================================================
-        function exportAllData() {
+        function syncExport() {
             const json = JSON.stringify(data, null, 2);
-            const blob = new Blob([json], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `学习计划数据_${formatDate(new Date())}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
+            document.getElementById('syncTextarea').value = json;
+            setSyncStatus('✅ 数据已导出，可复制或导入', 'success');
             showToast('📥 数据已导出');
         }
 
-        function importAllData(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const imported = JSON.parse(e.target.result);
-                    const def = getDefaultData();
-                    for (const key in def) {
-                        if (!(key in imported)) { showToast('⚠️ 数据格式不完整'); return; }
-                    }
-                    if (confirm('导入将覆盖当前所有数据，确定继续吗？')) {
-                        data = imported;
-                        saveData();
-                        renderCalendar();
-                        showToast('📤 数据导入成功！');
-                    }
-                } catch (_) { showToast('⚠️ 导入失败，请检查文件格式'); }
-            };
-            reader.readAsText(file);
-            event.target.value = '';
+        function syncCopy() {
+            const text = document.getElementById('syncTextarea').value;
+            if (!text) { showToast('没有可复制的内容', 'warning'); return; }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast('📋 已复制到剪贴板');
+                    setSyncStatus('📋 已复制到剪贴板', 'info');
+                }).catch(() => fallbackCopy(text));
+            } else {
+                fallbackCopy(text);
+            }
         }
 
-        function copyDataText() {
-            const json = JSON.stringify(data, null, 2);
-            navigator.clipboard.writeText(json).then(() => {
-                showToast('📋 已复制数据到剪贴板');
-            }).catch(() => {
-                const ta = document.createElement('textarea');
-                ta.value = json;
-                document.body.appendChild(ta);
-                ta.select();
+        function fallbackCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            ta.style.top = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
                 document.execCommand('copy');
-                ta.remove();
-                showToast('📋 已复制数据到剪贴板');
-            });
+                showToast('📋 已复制到剪贴板');
+                setSyncStatus('📋 已复制到剪贴板', 'info');
+            } catch (e) { showToast('复制失败，请手动选择复制', 'warning'); }
+            document.body.removeChild(ta);
         }
+
+        function syncImport() {
+            const text = document.getElementById('syncTextarea').value.trim();
+            if (!text) { setSyncStatus('⚠️ 请先粘贴要导入的数据', 'error');
+                showToast('请粘贴数据', 'warning'); return; }
+            let parsed;
+            try { parsed = JSON.parse(text); } catch (e) {
+                setSyncStatus('❌ 数据格式错误，请检查是否为有效的JSON', 'error');
+                showToast('数据格式错误', 'warning');
+                return;
+            }
+            const def = getDefaultData();
+            for (const key in def) {
+                if (!(key in parsed)) {
+                    setSyncStatus('❌ 数据格式不完整，缺少 ' + key + ' 字段', 'error');
+                    return;
+                }
+            }
+            if (!confirm('导入将覆盖当前所有数据（学员、日历、班级），确认继续吗？')) return;
+            try {
+                data = parsed;
+                saveData();
+                renderCalendar();
+                renderEbbinghausList();
+                setSyncStatus(`✅ 数据导入成功！`, 'success');
+                showToast('✅ 数据导入成功！');
+            } catch (e) {
+                setSyncStatus('❌ 导入失败：' + e.message, 'error');
+                showToast('导入失败', 'warning');
+            }
+        }
+
+        function clearSyncText() {
+            document.getElementById('syncTextarea').value = '';
+            document.getElementById('syncStatus').style.display = 'none';
+        }
+
+        function setSyncStatus(message, type = 'info') {
+            const el = document.getElementById('syncStatus');
+            el.textContent = message;
+            el.className = 'sync-status ' + type;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 4000);
+        }
+
+        document.getElementById('syncExportBtn').addEventListener('click', syncExport);
+        document.getElementById('syncCopyBtn').addEventListener('click', syncCopy);
+        document.getElementById('syncImportBtn').addEventListener('click', syncImport);
+        document.getElementById('syncClearBtn').addEventListener('click', clearSyncText);
+
+        // ================================================================
+        //  🆕 学习倒计时 — 核心逻辑
+        // ================================================================
+        let timerState = {
+            totalSeconds: 25 * 60,
+            remaining: 25 * 60,
+            isRunning: false,
+            isPaused: false,
+            intervalId: null,
+            startTimestamp: null,
+            elapsed: 0
+        };
+
+        const timerMinEl = document.getElementById('timerMin');
+        const timerSecEl = document.getElementById('timerSec');
+        const timerProgressBar = document.getElementById('timerProgressBar');
+        const timerStatus = document.getElementById('timerStatus');
+        const timerStartBtn = document.getElementById('timerStartBtn');
+        const timerPauseBtn = document.getElementById('timerPauseBtn');
+        const timerResetBtn = document.getElementById('timerResetBtn');
+        const timerMinutesInput = document.getElementById('timerMinutes');
+        const timerDisplayWrap = document.getElementById('timerDisplayWrap');
+
+        // 全屏元素
+        const fsOverlay = document.getElementById('timerFullscreen');
+        const fsTime = document.getElementById('fsTime');
+        const fsLabel = document.getElementById('fsLabel');
+        const fsProgressBar = document.getElementById('fsProgressBar');
+        const fsElapsed = document.getElementById('fsElapsed');
+        const fsRemain = document.getElementById('fsRemain');
+        const fsPercent = document.getElementById('fsPercent');
+        const fsExitBtn = document.getElementById('fsExitBtn');
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return {
+                min: String(m).padStart(2, '0'),
+                sec: String(s).padStart(2, '0'),
+                str: `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+            };
+        }
+
+        function updateTimerDisplay() {
+            const remaining = Math.max(0, timerState.remaining);
+            const total = timerState.totalSeconds;
+            const progress = total > 0 ? (remaining / total * 100) : 0;
+            const fmt = formatTime(remaining);
+            timerMinEl.textContent = fmt.min;
+            timerSecEl.textContent = fmt.sec;
+            timerProgressBar.style.width = progress + '%';
+            // 更新全屏显示
+            fsTime.textContent = fmt.str;
+            fsProgressBar.style.width = progress + '%';
+            const elapsed = timerState.totalSeconds - remaining;
+            const elapsedFmt = formatTime(elapsed);
+            fsElapsed.textContent = `⏱️ 已过 ${elapsedFmt.str}`;
+            fsRemain.textContent = `⏳ 剩余 ${fmt.str}`;
+            const pct = total > 0 ? Math.round((elapsed / total) * 100) : 0;
+            fsPercent.textContent = `📊 ${pct}%`;
+            // 状态文字
+            if (remaining === 0 && timerState.isRunning) {
+                timerStatus.textContent = '⏰ 时间到！';
+                fsLabel.textContent = '🎉 专注完成！';
+                if (!document.querySelector('.timer-flash')) {
+                    document.querySelector('.timer-display-wrap').classList.add('timer-flash');
+                }
+            } else if (timerState.isRunning) {
+                timerStatus.textContent = '⏳ 进行中';
+                fsLabel.textContent = '⏳ 专注学习';
+                document.querySelector('.timer-display-wrap').classList.remove('timer-flash');
+            } else if (timerState.isPaused) {
+                timerStatus.textContent = '⏸️ 已暂停';
+                fsLabel.textContent = '⏸️ 已暂停';
+            } else {
+                timerStatus.textContent = '就绪';
+                fsLabel.textContent = '⏳ 准备开始';
+            }
+        }
+
+        function timerTick() {
+            if (!timerState.isRunning || timerState.isPaused) return;
+            const now = Date.now();
+            const delta = Math.floor((now - timerState.startTimestamp) / 1000);
+            const remaining = Math.max(0, timerState.totalSeconds - delta);
+            timerState.remaining = remaining;
+            timerState.elapsed = delta;
+            updateTimerDisplay();
+            if (remaining <= 0) {
+                timerState.isRunning = false;
+                timerState.remaining = 0;
+                clearInterval(timerState.intervalId);
+                timerState.intervalId = null;
+                updateTimerDisplay();
+                timerStartBtn.style.display = 'inline-flex';
+                timerPauseBtn.style.display = 'none';
+                timerStatus.textContent = '⏰ 时间到！';
+                // 全屏也停止
+                if (fsOverlay.classList.contains('active')) {
+                    fsLabel.textContent = '🎉 专注完成！';
+                }
+                showToast('⏰ 倒计时结束！');
+                return;
+            }
+        }
+
+        function startTimer() {
+            if (timerState.isRunning && !timerState.isPaused) return;
+            if (timerState.remaining <= 0) {
+                // 重置
+                const mins = parseInt(timerMinutesInput.value) || 25;
+                timerState.totalSeconds = mins * 60;
+                timerState.remaining = timerState.totalSeconds;
+                timerState.elapsed = 0;
+                timerState.isPaused = false;
+            }
+            if (timerState.isPaused) {
+                timerState.isPaused = false;
+                timerState.startTimestamp = Date.now() - timerState.elapsed * 1000;
+            } else {
+                timerState.startTimestamp = Date.now();
+                timerState.elapsed = 0;
+            }
+            timerState.isRunning = true;
+            if (timerState.intervalId) clearInterval(timerState.intervalId);
+            timerState.intervalId = setInterval(timerTick, 200);
+            timerStartBtn.style.display = 'none';
+            timerPauseBtn.style.display = 'inline-flex';
+            updateTimerDisplay();
+            document.querySelector('.timer-display-wrap').classList.remove('timer-flash');
+            // 同步全屏
+            if (fsOverlay.classList.contains('active')) {
+                fsLabel.textContent = '⏳ 专注学习';
+            }
+        }
+
+        function pauseTimer() {
+            if (!timerState.isRunning || timerState.isPaused) return;
+            timerState.isPaused = true;
+            if (timerState.intervalId) {
+                clearInterval(timerState.intervalId);
+                timerState.intervalId = null;
+            }
+            timerStartBtn.style.display = 'inline-flex';
+            timerPauseBtn.style.display = 'none';
+            updateTimerDisplay();
+            if (fsOverlay.classList.contains('active')) {
+                fsLabel.textContent = '⏸️ 已暂停';
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerState.intervalId);
+            timerState.intervalId = null;
+            const mins = parseInt(timerMinutesInput.value) || 25;
+            timerState.totalSeconds = mins * 60;
+            timerState.remaining = timerState.totalSeconds;
+            timerState.isRunning = false;
+            timerState.isPaused = false;
+            timerState.elapsed = 0;
+            timerStartBtn.style.display = 'inline-flex';
+            timerPauseBtn.style.display = 'none';
+            document.querySelector('.timer-display-wrap').classList.remove('timer-flash');
+            updateTimerDisplay();
+            if (fsOverlay.classList.contains('active')) {
+                fsLabel.textContent = '⏳ 准备开始';
+            }
+            showToast('🔄 已重置');
+        }
+
+        function adjustTimer(delta) {
+            if (timerState.isRunning) return;
+            let mins = parseInt(timerMinutesInput.value) || 25;
+            mins = Math.max(1, Math.min(180, mins + delta));
+            timerMinutesInput.value = mins;
+            timerState.totalSeconds = mins * 60;
+            timerState.remaining = timerState.totalSeconds;
+            timerState.elapsed = 0;
+            updateTimerDisplay();
+        }
+
+        // 事件绑定
+        timerStartBtn.addEventListener('click', startTimer);
+        timerPauseBtn.addEventListener('click', pauseTimer);
+        timerResetBtn.addEventListener('click', resetTimer);
+        document.getElementById('timerAdd5Btn').addEventListener('click', () => adjustTimer(5));
+        document.getElementById('timerSub5Btn').addEventListener('click', () => adjustTimer(-5));
+
+        timerMinutesInput.addEventListener('change', function() {
+            if (timerState.isRunning) return;
+            let val = parseInt(this.value) || 25;
+            val = Math.max(1, Math.min(180, val));
+            this.value = val;
+            timerState.totalSeconds = val * 60;
+            timerState.remaining = timerState.totalSeconds;
+            timerState.elapsed = 0;
+            updateTimerDisplay();
+        });
+
+        // ================================================================
+        //  倒计时全屏 — 双击触发
+        // ================================================================
+        let fsColorAnimId = null;
+        let fsHue = 0;
+
+        function enterFullscreenTimer() {
+            if (fsOverlay.classList.contains('active')) return;
+            fsOverlay.classList.add('active');
+            // 同步当前状态
+            updateTimerDisplay();
+            if (timerState.isRunning && !timerState.isPaused) {
+                fsLabel.textContent = '⏳ 专注学习';
+            } else if (timerState.isPaused) {
+                fsLabel.textContent = '⏸️ 已暂停';
+            } else if (timerState.remaining <= 0) {
+                fsLabel.textContent = '🎉 专注完成！';
+            } else {
+                fsLabel.textContent = '⏳ 准备开始';
+            }
+            // 启动背景颜色动画
+            if (fsColorAnimId) cancelAnimationFrame(fsColorAnimId);
+            fsHue = 0;
+            animateFsBackground();
+
+            // 全屏API
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            }
+            document.body.style.overflow = 'hidden';
+        }
+
+        function exitFullscreenTimer() {
+            fsOverlay.classList.remove('active');
+            if (fsColorAnimId) {
+                cancelAnimationFrame(fsColorAnimId);
+                fsColorAnimId = null;
+            }
+            if (document.fullscreenElement) {
+                document.exitFullscreen().catch(() => {});
+            }
+            document.body.style.overflow = '';
+        }
+
+        function animateFsBackground() {
+            // 色相循环 + 饱和度/明度变化
+            fsHue = (fsHue + 0.15) % 360;
+            // 使用多个颜色维度：主色 + 偏移色
+            const hue1 = fsHue;
+            const hue2 = (fsHue + 60) % 360;
+            const hue3 = (fsHue + 120) % 360;
+            const sat = 50 + 30 * Math.sin(fsHue * 0.02);
+            const light = 25 + 15 * Math.sin(fsHue * 0.03 + 1);
+            const bg = `radial-gradient(ellipse at 30% 40%, hsl(${hue1}, ${sat}%, ${light+10}%), hsl(${hue2}, ${sat-10}%, ${light-5}%), hsl(${hue3}, ${sat+10}%, ${light-15}%))`;
+            fsOverlay.style.background = bg;
+            // 文字颜色微调：根据亮度调整
+            const brightness = 40 + 20 * Math.sin(fsHue * 0.025 + 2);
+            const textColor = brightness > 50 ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.95)';
+            fsTime.style.color = textColor;
+            fsLabel.style.color = `rgba(255,255,255,${0.4 + 0.3 * Math.sin(fsHue * 0.01)})`;
+            fsColorAnimId = requestAnimationFrame(animateFsBackground);
+        }
+
+        // 双击显示区域进入全屏
+        timerDisplayWrap.addEventListener('dblclick', function(e) {
+            e.stopPropagation();
+            enterFullscreenTimer();
+        });
+
+        // 全屏退出按钮
+        fsExitBtn.addEventListener('click', exitFullscreenTimer);
+
+        // 双击全屏区域退出
+        fsOverlay.addEventListener('dblclick', function(e) {
+            if (e.target === this || e.target.closest('.fs-content')) {
+                exitFullscreenTimer();
+            }
+        });
+
+        // ESC 退出全屏
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && fsOverlay.classList.contains('active')) {
+                exitFullscreenTimer();
+            }
+        });
+
+        // 全屏变化事件
+        document.addEventListener('fullscreenchange', function() {
+            if (!document.fullscreenElement && fsOverlay.classList.contains('active')) {
+                exitFullscreenTimer();
+            }
+        });
 
         // ================================================================
         //  导航
@@ -2231,7 +2933,7 @@
         });
 
         // ================================================================
-        //  窗口变化重绘图表
+        //  窗口变化
         // ================================================================
         let resizeTimer = null;
         window.addEventListener('resize', () => {
@@ -2251,9 +2953,15 @@
         const now = new Date();
         selectedDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         renderCalendar();
+        // 初始化倒计时显示
+        const initMins = parseInt(timerMinutesInput.value) || 25;
+        timerState.totalSeconds = initMins * 60;
+        timerState.remaining = timerState.totalSeconds;
+        updateTimerDisplay();
 
-        console.log('📚 学习计划管理器 智能复习版已启动！');
-        console.log('💡 添加背诵内容后自动生成复习计划，点击内容查看独立曲线。');
+        console.log('📚 学习计划管理器 沉浸倒计时版已启动！');
+        console.log('💡 双击倒计时区域进入全屏沉浸模式，背景颜色会随时间流动变化。');
     </script>
+
 </body>
 </html>
